@@ -1,0 +1,58 @@
+.im {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #F8E4CF 0%, #F0D4B8 50%, #F8E4CF 100%);
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 20;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.im__content {
+  width: 100%;
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 6vh 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.im__words {
+  display: flex;
+  flex-direction: column;
+  margin: 2rem 0;
+  gap: 0;
+}
+
+.im__word {
+  display: block;
+  color: var(--royal-blue, #0B308A);
+  line-height: 0.86;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  will-change: transform, opacity;
+  opacity: 0; /* Hidden initially until stepped scrollytelling reveals each word */
+}
+
+/* AT highlighted in Aviation Flame Orange with solid text (not hollow) */
+.im__word-at {
+  color: var(--flame-orange, #F47A24);
+  -webkit-text-stroke: 0;
+}
+
+.im__tagline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-top: 2rem;
+  will-change: transform, opacity;
+  opacity: 0;
+}
+
+@media (max-width: 768px) {
+  .im__words {
+    margin: 1.5rem 0;
+  }
+}

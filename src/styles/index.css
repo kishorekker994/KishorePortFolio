@@ -1,0 +1,420 @@
+/* ============================================================
+   KISHORE KUMAR PORTFOLIO — DESIGN SYSTEM
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* --- TOKENS --- */
+:root {
+  --bg:                #F8E4CF;
+  --bg-warm:           #FFF8EF;
+  --bg-deep:           #F0D4B8;
+
+  /* ROYAL BLUE & ORANGE THEME */
+  --royal-blue:        #0B308A;
+  --royal-blue-deep:   #061F5C;
+  --royal-blue-light:  #1D4ED8;
+  --royal-blue-60:     rgba(11, 48, 138, 0.70);
+  --royal-blue-30:     rgba(11, 48, 138, 0.25);
+  --royal-blue-10:     rgba(11, 48, 138, 0.08);
+
+  --orange:            #F47A24;
+  --orange-bright:     #FF6600;
+  --orange-soft:       #E8A06C;
+  --orange-pale:       #FAEBD4;
+  --white:             #FFF8EF;
+
+  /* Aliased for legacy classes */
+  --graphite:          #0B308A;
+  --graphite-60:       rgba(11, 48, 138, 0.70);
+  --graphite-30:       rgba(11, 48, 138, 0.25);
+
+  --font-display:      'Montserrat', sans-serif;
+  --font-heading:      'Montserrat', sans-serif;
+  --font-body:         'Montserrat', 'Inter', sans-serif;
+  --font-mono:         'JetBrains Mono', 'Montserrat', monospace;
+
+  --ease-cinematic:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out:          cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  --z-bg:              0;
+  --z-aircraft:        5;
+  --z-mid:             10;
+  --z-ui:              20;
+  --z-nav:             100;
+  --z-cursor:          200;
+  --z-preloader:       999;
+}
+
+/* --- RESET --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: auto; /* GSAP handles smooth scroll */
+}
+
+body {
+  font-family: var(--font-body);
+  background: radial-gradient(circle at 68% 28%, #FFF8EF 0%, #F8E4CF 45%, #ECD0B4 100%);
+  background-attachment: fixed;
+  color: var(--royal-blue-deep);
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* --- TYPOGRAPHY (MONTSERRAT FOR HEADINGS & NUMBERS, MONTSERRAT/INTER FOR BODY) --- */
+h1, h2, h3, h4, h5, h6,
+.display-xl, .display-lg, .display-md, .display-sm {
+  color: var(--royal-blue);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: -0.015em;
+  font-weight: 850;
+}
+
+.display-xl {
+  font-size: clamp(2.8rem, 5.2vw, 5.2rem);
+  line-height: 0.96;
+  font-weight: 900;
+}
+
+.display-lg {
+  font-size: clamp(2.1rem, 3.6vw, 3.6rem);
+  line-height: 1.02;
+  font-weight: 850;
+}
+
+.display-md {
+  font-size: clamp(1.5rem, 2.4vw, 2.3rem);
+  line-height: 1.1;
+  font-weight: 800;
+}
+
+.display-sm {
+  font-size: clamp(1.12rem, 1.7vw, 1.55rem);
+  line-height: 1.2;
+  font-weight: 750;
+}
+
+.label {
+  font-family: 'Montserrat', sans-serif;
+  font-size: clamp(0.68rem, 0.85vw, 0.80rem);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--royal-blue-60);
+  font-weight: 750;
+}
+
+.label--orange,
+.section-number,
+.highlight-orange {
+  color: var(--orange) !important;
+}
+
+.body-text, p {
+  font-family: var(--font-body);
+  font-size: clamp(0.86rem, 1.0vw, 0.98rem);
+  line-height: 1.65;
+  font-weight: 450;
+  color: var(--royal-blue-deep);
+}
+
+/* --- SECTION NUMBERING & SMALL LABELS --- */
+.section-number {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.74rem;
+  letter-spacing: 0.16em;
+  color: var(--orange);
+  text-transform: uppercase;
+  font-weight: 800;
+  margin-bottom: 1.4rem;
+}
+
+/* --- LAYOUT --- */
+.container {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 clamp(1.5rem, 5vw, 6rem);
+}
+
+.grid-12 {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: clamp(1rem, 2vw, 2rem);
+}
+
+/* --- CANVAS CONTAINER --- */
+#aircraft-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: var(--z-aircraft);
+  pointer-events: none;
+}
+
+#aircraft-canvas canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+/* --- SECTIONS --- */
+.section {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.section--tall {
+  min-height: 200vh;
+}
+
+.section--content {
+  position: relative;
+  z-index: var(--z-ui);
+  pointer-events: none;
+}
+
+.section--content * {
+  pointer-events: auto;
+}
+
+/* --- LINES & DIVIDERS --- */
+.line-h {
+  width: 100%;
+  height: 1px;
+  background: var(--graphite-30);
+}
+
+.line-orange {
+  width: 50px;
+  height: 2px;
+  background: var(--orange);
+  margin-bottom: 1.2rem;
+}
+
+/* --- BUTTONS --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid var(--graphite-30);
+  padding: 0.8rem 1.6rem;
+  background: transparent;
+  color: var(--graphite);
+  cursor: none;
+  transition: border-color 0.3s ease, background 0.3s ease, color 0.3s ease, transform 0.2s ease;
+  text-decoration: none;
+}
+
+.btn:hover {
+  border-color: var(--orange);
+  background: var(--orange);
+  color: var(--white);
+  transform: translateY(-1px);
+}
+
+.btn--primary {
+  background: var(--graphite);
+  color: var(--white);
+  border-color: var(--graphite);
+}
+
+.btn--primary:hover {
+  background: var(--orange);
+  border-color: var(--orange);
+}
+
+/* --- CARDS --- */
+.card {
+  background: rgba(255, 248, 239, 0.80);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(11, 48, 138, 0.10);
+  padding: 1.6rem 2rem;
+  position: relative;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--orange);
+}
+
+.card:hover {
+  box-shadow: 0 16px 40px -12px rgba(11, 48, 138, 0.10);
+  transform: translateY(-2px);
+}
+
+/* --- REVEAL ANIMATIONS --- */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+}
+
+.reveal.is-visible {
+  animation: reveal-up 0.8s var(--ease-cinematic) forwards;
+}
+
+@keyframes reveal-up {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- ORANGE TECH LINE --- */
+.tech-line {
+  position: absolute;
+  background: var(--orange);
+  opacity: 0.6;
+}
+
+.tech-line--h {
+  height: 1px;
+  width: 100%;
+}
+
+.tech-line--v {
+  width: 1px;
+  height: 100%;
+}
+
+/* --- FLIGHT PATH SVG --- */
+.flight-path {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* --- ATMOSPHERIC PARTICLES --- */
+.particles-layer {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* --- SCROLLBAR --- */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--orange); border-radius: 2px; }
+
+/* --- SELECTION --- */
+::selection {
+  background: var(--orange);
+  color: var(--white);
+}
+
+/* --- REDUCED MOTION --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --- MOBILE TYPOGRAPHY FIX --- */
+@media (max-width: 768px) {
+  body { cursor: auto; }
+
+  .display-xl {
+    font-size: clamp(2.4rem, 10vw, 4rem);
+  }
+
+  .display-lg {
+    font-size: clamp(1.8rem, 7vw, 3rem);
+  }
+
+  .display-md {
+    font-size: clamp(1.3rem, 5vw, 2rem);
+  }
+
+  .display-sm {
+    font-size: clamp(1rem, 4vw, 1.5rem);
+  }
+
+  .grid-12 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .btn {
+    cursor: auto;
+  }
+}
+
+/* --- 3D AIRCRAFT INTEGRATION --- */
+#main-content {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+/* Alternative approach to heavy frosted glass: 
+   Subtle gradient that fades to transparent on the right, 
+   so it doesn't create hard box edges over the 3D airplane */
+.card,
+.exp__card,
+.pricing__layer,
+.arch__layer,
+.hib__stage,
+.proj__card,
+.lead__card,
+.be__card,
+.api__layer,
+.rr__card {
+  background: linear-gradient(90deg, rgba(248, 228, 207, 0.6) 0%, transparent 100%);
+  border: none;
+  border-left: 2px solid var(--orange);
+  padding: 1.2rem 1.6rem 1.2rem 2rem;
+  box-shadow: none;
+  position: relative;
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.card::before {
+  display: none; /* Remove old orange absolute line */
+}
+
+.card:hover,
+.exp__card:hover,
+.pricing__layer:hover,
+.arch__layer:hover,
+.hib__stage:hover,
+.proj__card:hover,
+.lead__card:hover,
+.be__card:hover,
+.api__layer:hover,
+.rr__card:hover {
+  transform: translateX(4px);
+  border-left-color: var(--royal-blue);
+  box-shadow: none;
+}

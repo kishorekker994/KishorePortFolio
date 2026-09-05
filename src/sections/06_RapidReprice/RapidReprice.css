@@ -1,0 +1,65 @@
+.rr {
+  padding: 10vh 0;
+  background: transparent;
+  position: relative;
+  z-index: 20;
+  overflow: hidden;
+}
+
+.rr__streaks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.rr__streak {
+  position: absolute;
+  left: -200px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #F47A24, transparent);
+  opacity: 0.3;
+}
+
+.rr__headline {
+  color: var(--royal-blue, #0B308A);
+  line-height: 0.95;
+  margin: 1rem 0;
+  position: relative;
+  z-index: 2;
+}
+
+.rr__sub {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.76rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--orange, #F47A24);
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.rr__cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  position: relative;
+  z-index: 2;
+}
+
+.rr__card-title {
+  color: var(--royal-blue, #0B308A);
+  font-size: clamp(1.2rem, 2vw, 2rem);
+  margin-bottom: 1rem;
+}
+
+.rr__card-desc {
+  opacity: 0.6;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .rr__cards { grid-template-columns: 1fr; }
+}

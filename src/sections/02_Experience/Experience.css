@@ -1,0 +1,152 @@
+.exp {
+  background: transparent;
+  padding: 10vh 0;
+  position: relative;
+  z-index: 20;
+}
+
+.exp__top {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: end;
+  margin-bottom: 5rem;
+}
+
+.exp__headline {
+  color: var(--royal-blue, #0B308A);
+  line-height: 0.85;
+}
+
+.exp__headline span:last-child {
+  color: var(--orange, #F47A24);
+  -webkit-text-stroke: 0;
+}
+
+.exp__company-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-bottom: 1rem;
+}
+
+.exp__company { font-size: 0.9rem; }
+
+.exp__timeline {
+  position: relative;
+  margin-bottom: 5rem;
+}
+
+.exp__path-svg {
+  width: 100%;
+  height: 60px;
+  overflow: visible;
+}
+
+.exp__nodes {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -20px;
+  position: relative;
+  z-index: 2;
+}
+
+.exp__node-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.exp__node {
+  width: 32px;
+  height: 32px;
+  border: 1px solid;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F8E4CF;
+}
+
+.exp__node-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.exp__node-info {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.exp__node-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  color: var(--royal-blue, #0B308A);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.exp__roles {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  max-width: 900px;
+}
+
+.exp__role-item {
+  position: relative;
+}
+
+.exp__role-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.exp__role-title {
+  font-size: clamp(1.2rem, 2.5vw, 2.5rem);
+  color: var(--royal-blue, #0B308A);
+  margin-bottom: 0.3rem;
+}
+
+.exp__role-period {
+  white-space: nowrap;
+  opacity: 0.5;
+}
+
+.exp__role-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.exp__resp-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  opacity: 0.75;
+}
+
+.exp__bullet {
+  flex-shrink: 0;
+  width: 4px;
+  height: 4px;
+  background: #F47A24;
+  border-radius: 50%;
+  margin-top: 0.6em;
+}
+
+@media (max-width: 768px) {
+  .exp__top { grid-template-columns: 1fr; }
+  .exp__nodes { gap: 0.5rem; }
+  .exp__node-info { display: none; }
+}

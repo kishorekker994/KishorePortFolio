@@ -1,0 +1,192 @@
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 1.2rem clamp(1.5rem, 5vw, 6rem);
+  transition: background 0.4s ease, backdrop-filter 0.4s ease, padding 0.3s ease;
+}
+
+.nav--scrolled {
+  background: rgba(248, 228, 207, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(11, 48, 138, 0.08);
+  padding-top: 0.8rem;
+  padding-bottom: 0.8rem;
+}
+
+.nav__inner {
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.nav__brand {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.4rem;
+  letter-spacing: 0.08em;
+  color: var(--royal-blue, #0B308A);
+  background: none;
+  border: none;
+  cursor: none;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+  transition: color 0.3s ease;
+}
+
+.nav__brand:hover {
+  color: var(--orange, #F47A24);
+}
+
+.nav__dot {
+  color: var(--orange, #F47A24);
+  font-size: 0.5rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.nav__links {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-left: auto;
+}
+
+.nav__link {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  color: var(--royal-blue-60, rgba(11, 48, 138, 0.6));
+  background: none;
+  border: none;
+  cursor: none;
+  text-transform: uppercase;
+  transition: color 0.3s ease;
+  position: relative;
+  padding: 0.25rem 0;
+}
+
+.nav__link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 1.5px;
+  background: var(--orange, #F47A24);
+  transition: width 0.3s var(--ease-cinematic, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.nav__link:hover {
+  color: var(--orange, #F47A24);
+}
+
+.nav__link:hover::after {
+  width: 100%;
+}
+
+/* Active nav link */
+.nav__link--active {
+  color: var(--royal-blue, #0B308A);
+  font-weight: 600;
+}
+
+.nav__link--active::after {
+  width: 100%;
+  background: var(--royal-blue, #0B308A);
+}
+
+.nav__cta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  color: #FFF8EF;
+  background: var(--royal-blue, #0B308A);
+  border: none;
+  padding: 0.6rem 1.2rem;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: background 0.3s ease, transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.nav__cta:hover {
+  background: var(--orange, #F47A24);
+  color: #FFF8EF;
+  transform: translateY(-1px);
+}
+
+.nav__hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: none;
+  margin-left: auto;
+  padding: 0.5rem;
+}
+
+.nav__hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--royal-blue, #0B308A);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.nav--open .nav__hamburger span:nth-child(1) { transform: rotate(45deg) translate(4px, 4px); }
+.nav--open .nav__hamburger span:nth-child(2) { opacity: 0; }
+.nav--open .nav__hamburger span:nth-child(3) { transform: rotate(-45deg) translate(4px, -4px); }
+
+.nav__mobile {
+  display: none;
+  flex-direction: column;
+  gap: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-top: 1rem;
+}
+
+.nav__mobile--open { max-height: 500px; }
+
+.nav__mobile-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem;
+  letter-spacing: 0.05em;
+  color: var(--royal-blue, #0B308A);
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(11, 48, 138, 0.1);
+  padding: 1rem 0;
+  cursor: none;
+  text-align: left;
+  transition: color 0.3s ease, padding-left 0.3s ease;
+}
+
+.nav__mobile-link:hover,
+.nav__mobile-link--active {
+  color: var(--orange, #F47A24);
+  padding-left: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .nav__links, .nav__cta { display: none; }
+  .nav__hamburger { display: flex; cursor: auto; }
+  .nav__mobile { display: flex; }
+  .nav__brand { cursor: auto; }
+}

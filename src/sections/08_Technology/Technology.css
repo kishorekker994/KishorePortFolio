@@ -1,0 +1,101 @@
+.tech {
+  padding: 8vh 0;
+  background: transparent;
+  position: relative;
+  z-index: 20;
+}
+
+.tech__headline {
+  color: var(--royal-blue, #0B308A);
+  line-height: 0.95;
+  margin: 1rem 0 2rem;
+}
+
+.tech__layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.tech__constellation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tech__svg {
+  width: min(500px, 100%);
+  height: auto;
+  overflow: visible;
+}
+
+.tech__marquee-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  overflow: hidden;
+  width: 100%;
+  mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+}
+
+.tech__marquee {
+  display: flex;
+  overflow: hidden;
+  user-select: none;
+}
+
+.tech__marquee-track {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 3rem;
+  padding-right: 3rem; /* match gap so loop is seamless */
+  animation: scroll-marquee 25s linear infinite;
+}
+
+.tech__marquee--reverse .tech__marquee-track {
+  animation-direction: reverse;
+}
+
+.tech__marquee-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tech__marquee-dot {
+  width: 12px;
+  height: 12px;
+  background: var(--orange);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tech__marquee-text {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--royal-blue);
+  white-space: nowrap;
+  transition: color 0.3s ease, -webkit-text-stroke-color 0.3s ease;
+  cursor: default;
+}
+
+.tech__marquee-item:hover .tech__marquee-text {
+  color: var(--orange);
+  -webkit-text-stroke-color: var(--orange);
+}
+
+@keyframes scroll-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(calc(-100% / 3)); }
+}
+
+@media (max-width: 768px) {
+  .tech__layout { grid-template-columns: 1fr; }
+  
+  .tech__marquee-container {
+    mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+  }
+}

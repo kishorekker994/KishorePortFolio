@@ -1,0 +1,22 @@
+#aircraft-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 5;
+  pointer-events: none;
+}
+
+#aircraft-canvas canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+/* Disable 3D aircraft on mobile — performance + layout issues */
+@media (max-width: 768px) {
+  #aircraft-canvas {
+    display: none !important;
+  }
+}

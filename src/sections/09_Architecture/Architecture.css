@@ -1,0 +1,73 @@
+.arch {
+  padding: 10vh 0;
+  background: transparent;
+  position: relative;
+  z-index: 20;
+  overflow: hidden;
+}
+
+.arch__headline {
+  color: var(--royal-blue, #0B308A);
+  line-height: 0.95;
+  margin: 1rem 0 2rem;
+}
+
+.arch__layout {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2rem;
+  align-items: start;
+  max-width: 800px;
+}
+
+.arch__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.arch__layer {
+  display: grid;
+  grid-template-columns: 2rem 1fr 3rem;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.4rem 1.8rem;
+  background: rgba(255,248,239,0.7);
+  border: 1px solid rgba(11, 48, 138, 0.1);
+  border-left: 3px solid rgba(244,122,36, calc(0.3 + var(--z) * 0.14));
+  margin-left: calc(var(--offset) * 1px);
+  transition: background 0.3s ease;
+}
+
+.arch__layer:hover {
+  background: rgba(244,122,36,0.08);
+}
+
+.arch__layer-z { opacity: 0.45; color: var(--royal-blue, #0B308A); }
+
+.arch__layer-label {
+  font-size: clamp(0.9rem, 1.8vw, 1.8rem);
+  color: var(--royal-blue, #0B308A);
+  margin-bottom: 0.2rem;
+}
+
+.arch__layer-bar {
+  height: 2px;
+  background: #F47A24;
+  width: 100%;
+}
+
+.arch__connectors {
+  padding-top: 1.5rem;
+}
+
+.arch__conn-svg {
+  width: 40px;
+  height: auto;
+}
+
+@media (max-width: 768px) {
+  .arch__layout { grid-template-columns: 1fr; }
+  .arch__connectors { display: none; }
+  .arch__layer { margin-left: 0; }
+}
