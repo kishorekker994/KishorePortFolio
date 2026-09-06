@@ -86,7 +86,7 @@ export default function Intro() {
               VIEW MY WORK
               <span className="intro__cta-arrow">→</span>
             </button>
-            <a href="/Kishore_Kumar_Prakash_Babbar_Resume.pdf" className="btn intro__cta-secondary" data-cursor="DOWNLOAD" download>
+            <a href="/Kishore_Kumar_Prakash_Babu_Resume.pdf" className="btn intro__cta-secondary" data-cursor="DOWNLOAD" download>
               DOWNLOAD RESUME
               <span className="intro__cta-icon">↓</span>
             </a>
