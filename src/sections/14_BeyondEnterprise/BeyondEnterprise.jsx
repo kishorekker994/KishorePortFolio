@@ -10,37 +10,45 @@ export default function BeyondEnterprise() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top top',
-          end: '+=2000',
-          pin: true,
-          scrub: 0.8,
-        },
+      // 3600px pinned scroll space: each word gets 1200px exclusively.
+      // One word is FULLY VISIBLE at a time — zero overlap ever.
+      const tl = gsap.timeline();
+      
+      ScrollTrigger.create({
+        trigger: sectionRef.current,
+        start: 'top top',
+        end: '+=6000',
+        pin: true,
+        animation: tl,
+        scrub: 1,
       });
 
-      // Initially all 3 words are hidden.
-      // Scroll 1: BUILD. stamps in
+      // ── BEAT 1: BUILD. enters (0→0.12), holds (0.12→0.32), exits (0.32→0.38) ──
       tl.fromTo('.be__word--build',
-        { opacity: 0, y: 50, scale: 0.85 },
-        { opacity: 1, y: 0, scale: 1, duration: 1, ease: 'power2.out' },
-        0.05
+        { opacity: 0, y: 55, scale: 0.86 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.12, ease: 'power3.out' },
+        0
       );
+      tl.to('.be__word--build', { opacity: 0, y: -55, scale: 0.92, duration: 0.09, ease: 'power3.in' }, 0.30);
 
-      // Scroll 2: EXPLORE. stamps in
+      // ── BEAT 2: EXPLORE. enters (0.38→0.50), holds (0.50→0.66), exits (0.66→0.72) ──
       tl.fromTo('.be__word--explore',
-        { opacity: 0, y: 50, scale: 0.85 },
-        { opacity: 1, y: 0, scale: 1, duration: 1, ease: 'power2.out' },
+        { opacity: 0, y: 55, scale: 0.86 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.12, ease: 'power3.out' },
         0.38
       );
+      tl.to('.be__word--explore', { opacity: 0, y: -55, scale: 0.92, duration: 0.09, ease: 'power3.in' }, 0.64);
 
-      // Scroll 3: SHIP. stamps in
+      // ── BEAT 3: SHIP. enters (0.72→0.84), holds to end (0.84→1.0) ──
       tl.fromTo('.be__word--ship',
-        { opacity: 0, y: 50, scale: 0.85 },
-        { opacity: 1, y: 0, scale: 1, duration: 1, ease: 'power2.out' },
-        0.70
+        { opacity: 0, y: 55, scale: 0.86 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.12, ease: 'power3.out' },
+        0.72
       );
+
+      // Hold SHIP visible before unpinning
+      tl.to({}, { duration: 0.16 }, 0.84);
+
     }, sectionRef);
 
     return () => ctx.revert();
@@ -67,10 +75,9 @@ export default function BeyondEnterprise() {
                 Mastering enterprise-grade robustness inside the workplace, while aggressively experimenting with state-of-the-art tech, microservices, and AI products outside it.
               </p>
             </div>
-
           </div>
 
-          {/* Stepped reveal words */}
+          {/* Exclusive stepped reveal — only ONE word visible at a time */}
           <div className="be__words-wrap">
             <div className="be__word be__word--build display-xl">BUILD.</div>
             <div className="be__word be__word--explore display-xl">EXPLORE.</div>

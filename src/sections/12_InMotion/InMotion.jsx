@@ -11,14 +11,15 @@ export default function InMotion() {
   useEffect(() => {
     const ctx = gsap.context(() => {
       // Pinned depth-scrolling timeline: reveals MOVE, then AT, then SCALE in stepped scrollytelling
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top top',
-          end: '+=2200',
-          pin: true,
-          scrub: 0.8,
-        },
+      const tl = gsap.timeline();
+      
+      ScrollTrigger.create({
+        trigger: sectionRef.current,
+        start: 'top top',
+        end: '+=4000',
+        pin: true,
+        animation: tl,
+        scrub: 1,
       });
 
       // Step 1: MOVE sweeps in from the left with dynamic horizontal momentum

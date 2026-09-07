@@ -56,19 +56,27 @@
 }
 
 .be__words-wrap {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  align-items: flex-start;
+  /* Tall enough to show one word at a time */
+  min-height: 12rem;
   overflow: visible;
 }
 
+/* All words occupy the SAME vertical slot via absolute positioning */
 .be__word {
+  position: absolute;
+  top: 0;
+  left: 0;
   font-size: clamp(3.5rem, 8.5vw, 9.5rem);
   font-weight: 900;
   line-height: 0.88;
   letter-spacing: -0.02em;
   will-change: transform, opacity;
   opacity: 0;
+  white-space: nowrap;
 }
 
 .be__word--build {

@@ -25,10 +25,55 @@
   margin: 0 auto;
 }
 
+/* ── SECTION INDICATOR: 01 / 15 ── */
+.nav__indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  color: var(--royal-blue-60, rgba(11, 48, 138, 0.55));
+  border-left: 1px solid rgba(11, 48, 138, 0.15);
+  padding-left: 1.5rem;
+  white-space: nowrap;
+  transition: color 0.3s ease;
+}
+
+.nav__indicator-num {
+  color: var(--orange, #F47A24);
+  font-weight: 700;
+  font-size: 0.72rem;
+  min-width: 1.6em;
+}
+
+.nav__indicator-sep {
+  opacity: 0.4;
+  margin: 0 0.1rem;
+}
+
+.nav__indicator-total {
+  opacity: 0.5;
+}
+
+.nav__indicator-label {
+  margin-left: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  opacity: 0.65;
+  font-size: 0.60rem;
+}
+
+@media (max-width: 768px) {
+  .nav__indicator { display: none; }
+}
+
+
 .nav__brand {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.4rem;
-  letter-spacing: 0.08em;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.14em;
+  font-weight: 900;
   color: var(--royal-blue, #0B308A);
   background: none;
   border: none;
@@ -165,8 +210,9 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 2rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
   letter-spacing: 0.05em;
   color: var(--royal-blue, #0B308A);
   background: none;

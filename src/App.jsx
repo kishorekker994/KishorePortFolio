@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, Suspense } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Lenis from 'lenis';
 
 import './styles/index.css';
 
@@ -36,8 +37,38 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const scrollRef = useRef(0);
 
-  // Update scroll progress ref smoothly via ScrollTrigger (no layout thrashing)
+  // Lenis smooth scroll — integrate with GSAP ScrollTrigger
   useEffect(() => {
+    if (!loaded) return;
+
+    const lenis = new Lenis({
+      lerp: 0.08,           // Smoother momentum
+      smoothWheel: true,
+      syncTouch: false,
+      wheelMultiplier: 0.60, // Reduces scroll speed by 40% globally, requiring more physical scrolling
+      touchMultiplier: 0.60,
+    });
+
+    // Tick Lenis inside GSAP's RAF
+    gsap.ticker.add((time) => {
+      lenis.raf(time * 1000);
+    });
+    gsap.ticker.lagSmoothing(0); // Prevent frame lag spikes
+
+    // Connect Lenis scroll to ScrollTrigger
+    lenis.on('scroll', ScrollTrigger.update);
+    ScrollTrigger.scrollerProxy(document.body, {
+      scrollTop(value) {
+        if (arguments.length) lenis.scrollTo(value, { immediate: true });
+        return lenis.scroll;
+      },
+      getBoundingClientRect() {
+        return { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
+      },
+      pinType: 'transform',
+    });
+
+    // Master scroll progress tracker — drives aircraft & 3D environment
     const trigger = ScrollTrigger.create({
       trigger: document.body,
       start: 'top top',
@@ -47,7 +78,13 @@ export default function App() {
       },
     });
 
-    return () => trigger.kill();
+    ScrollTrigger.refresh();
+
+    return () => {
+      trigger.kill();
+      lenis.destroy();
+      gsap.ticker.remove(lenis.raf);
+    };
   }, [loaded]);
 
   // Lock scroll during preloader
@@ -56,8 +93,7 @@ export default function App() {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
-      // Refresh ScrollTrigger after load
-      setTimeout(() => ScrollTrigger.refresh(), 100);
+      setTimeout(() => ScrollTrigger.refresh(), 150);
     }
   }, [loaded]);
 
@@ -69,11 +105,11 @@ export default function App() {
       {/* Preloader */}
       {!loaded && <Preloader onComplete={() => setLoaded(true)} />}
 
-      {/* Fixed 3D Aircraft Canvas */}
+      {/* Fixed 3D Aircraft Canvas — always rendered for continuity */}
       <AircraftScene scrollRef={scrollRef} />
 
       {/* Fixed Navigation */}
-      <Navigation />
+      <Navigation scrollRef={scrollRef} />
 
       {/* Scroll Progress */}
       <ScrollProgress />

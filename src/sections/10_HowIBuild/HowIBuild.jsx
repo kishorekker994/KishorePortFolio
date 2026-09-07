@@ -45,15 +45,16 @@ export default function HowIBuild() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Pinned depth-scrolling timeline: 4200px scroll space provides ~5 deliberate scrolls between phases
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top top',
-          end: '+=4200',
-          pin: true,
-          scrub: 0.8,
-        },
+      // Pinned depth-scrolling timeline: 6000px scroll space provides ~5 deliberate scrolls between phases
+      const tl = gsap.timeline();
+      
+      ScrollTrigger.create({
+        trigger: sectionRef.current,
+        start: 'top top',
+        end: '+=6000',
+        pin: true,
+        animation: tl,
+        scrub: 1,
       });
 
       // Card 0 (DISCOVER) is visible initially in CSS.
