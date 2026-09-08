@@ -100,7 +100,7 @@ export const personalProjects = [
   },
   {
     number: '03',
-    name: 'PERSONAL',
+    name: 'KasuFlow',
     subtitle: 'FINANCE TRACKER',
     type: 'Web Application',
     description:

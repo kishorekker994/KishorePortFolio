@@ -462,6 +462,15 @@ button:disabled { cursor: default; }
 .project-cover-name { position: absolute; bottom: 3rem; left: 2rem; right: 2rem; font: 500 3rem/1.1 var(--font-display); z-index: 2; }
 .project-cover-name small { display: block; margin-top: 0.75rem; font: 0.6875rem var(--font-mono); }
 .project-image-note { position: absolute; bottom: 1rem; right: 1rem; z-index: 2; font: 0.5rem var(--font-mono); opacity: 0.8; }
+.project-showcase:is(.finance, .route54, .fusion) .project-cover { display: flex; flex-direction: column; aspect-ratio: auto; background: #eaf0f4; color: var(--folio-ink); }
+.project-showcase:is(.finance, .route54, .fusion) .project-cover::after { display: none; }
+.project-showcase:is(.finance, .route54, .fusion) .project-cover img { order: 1; height: auto; aspect-ratio: 2880 / 1624; object-fit: contain; transform: none; }
+.project-showcase:is(.finance, .route54, .fusion) .project-cover-top { position: static; padding: 1rem; order: 0; width: 100%; }
+.project-showcase:is(.finance, .route54, .fusion) .project-cover-top > span:first-child { color: white; }
+.project-showcase:is(.finance, .route54, .fusion) .project-cover-name { position: static; order: 2; padding: 1rem 1.25rem 0.75rem; font-size: 2rem; }
+.project-showcase:is(.finance, .route54, .fusion) .project-cover-name small { margin-top: 0.5rem; }
+.project-showcase:is(.finance, .route54, .fusion) .project-image-note { position: static; order: 3; padding: 0 1.25rem 1rem; }
+.project-showcase.finance .project-meta a { display: inline-flex; align-items: center; gap: 0.35rem; }
 .project-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; padding-block: 1rem; font-size: 0.8125rem; }
 .project-meta > span:last-child { font-size: 0.6875rem; color: var(--folio-muted); }
 .project-details { border-top: 1px solid var(--folio-line); padding-block: 1.5rem; animation: panel-enter 300ms both; }
@@ -710,6 +719,7 @@ button:disabled { cursor: default; }
   .project-gallery { grid-template-columns: 1fr; gap: 2rem; }
   .project-showcase:first-child { grid-column: auto; }
   .project-cover, .project-showcase:first-child .project-cover { aspect-ratio: 1.05; }
+  .project-showcase:is(.finance, .route54, .fusion) .project-cover { aspect-ratio: auto; }
   .project-cover-top { inset: 1rem 1rem auto; }
   .project-cover-top > span:first-child { font-size: 0.4375rem; padding: 0.5rem; }
   .project-cover-name { left: 1.5rem; right: 1.5rem; bottom: 2.75rem; font-size: 2.5rem; }
