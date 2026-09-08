@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   z-index: 100;
-  padding: 1.2rem clamp(1.5rem, 5vw, 6rem);
+  padding: 1rem 0;
   transition: background 0.4s ease, backdrop-filter 0.4s ease, padding 0.3s ease;
 }
 
@@ -20,9 +20,16 @@
 .nav__inner {
   display: flex;
   align-items: center;
-  gap: 2.5rem;
-  max-width: 1440px;
+  gap: 2rem;
+  width: 100%;
+  max-width: var(--content-width);
+  padding-inline: var(--page-gutter);
   margin: 0 auto;
+}
+
+.nav--open {
+  background: var(--bg-warm);
+  border-bottom: 1px solid var(--royal-blue-30);
 }
 
 /* ── SECTION INDICATOR: 01 / 15 ── */
@@ -74,6 +81,7 @@
   font-size: 1.1rem;
   letter-spacing: 0.14em;
   font-weight: 900;
+  min-height: 44px;
   color: var(--royal-blue, #0B308A);
   background: none;
   border: none;
@@ -110,7 +118,8 @@
 .nav__link {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.68rem;
-  letter-spacing: 0.16em;
+  letter-spacing: 0;
+  min-height: 44px;
   color: var(--royal-blue-60, rgba(11, 48, 138, 0.6));
   background: none;
   border: none;
@@ -154,7 +163,11 @@
 .nav__cta {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.68rem;
-  letter-spacing: 0.16em;
+  letter-spacing: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   color: #FFF8EF;
   background: var(--royal-blue, #0B308A);
   border: none;
@@ -180,6 +193,11 @@
   cursor: none;
   margin-left: auto;
   padding: 0.5rem;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .nav__hamburger span {
@@ -201,10 +219,18 @@
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  margin-top: 1rem;
+  width: 100%;
+  max-width: var(--content-width);
+  padding-inline: var(--page-gutter);
+  margin: 0 auto;
+  visibility: hidden;
 }
 
-.nav__mobile--open { max-height: 500px; }
+.nav__mobile--open {
+  max-height: calc(100svh - 5rem);
+  overflow-y: auto;
+  visibility: visible;
+}
 
 .nav__mobile-link {
   display: flex;
@@ -230,7 +256,7 @@
   padding-left: 0.5rem;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .nav__links, .nav__cta { display: none; }
   .nav__hamburger { display: flex; cursor: auto; }
   .nav__mobile { display: flex; }

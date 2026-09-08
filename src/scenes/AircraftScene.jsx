@@ -599,7 +599,8 @@ function TechGrid({ scrollRef }) {
    horizon fade.
 ═══════════════════════════════════════════ */
 function AircraftAnimator({ aircraftRef, scrollRef, isReducedMotion }) {
-  const { viewport } = useThree();
+  const { viewport, size } = useThree();
+  const positionTarget = useRef(new THREE.Vector3());
 
   useFrame((_, delta) => {
     if (!aircraftRef.current) return;
@@ -608,12 +609,14 @@ function AircraftAnimator({ aircraftRef, scrollRef, isReducedMotion }) {
 
     obj.rotation.order = 'YXZ';
 
-    const isMobile = viewport.width < 7.5;
-    const responsiveScale = isMobile ? Math.min(0.55, viewport.width / 13) : 1.0;
-    const baseOffsetRight = isMobile ? 0.3 : 2.5;
+    const isMobile = size.width <= 768;
+    const responsiveScale = isMobile
+      ? Math.min(0.38, viewport.width / 17)
+      : Math.min(0.7, viewport.width / 28);
+    const baseOffsetRight = isMobile ? 0.8 : Math.min(2.6, viewport.width * 0.16);
 
     if (isReducedMotion) {
-      obj.position.set(baseOffsetRight, -0.38, 2.2);
+      obj.position.set(baseOffsetRight, isMobile ? -2.78 : -0.73, isMobile ? 0 : 2.2);
       obj.rotation.set(-0.02, -1.52, 0.0);
       obj.scale.setScalar(1.30 * responsiveScale);
       return;
@@ -771,7 +774,8 @@ function AircraftAnimator({ aircraftRef, scrollRef, isReducedMotion }) {
 
     // Frame-rate independent exponential smoothing
     const damp = 1 - Math.exp(-8 * delta);
-    obj.position.lerp(new THREE.Vector3(ax, ay, az), damp);
+    positionTarget.current.set(ax, ay - (isMobile ? 2.4 : 0.35), az - (isMobile ? 2.4 : 0));
+    obj.position.lerp(positionTarget.current, damp);
     obj.rotation.x = THREE.MathUtils.lerp(obj.rotation.x, rx, damp);
     obj.rotation.y = THREE.MathUtils.lerp(obj.rotation.y, ry, damp);
     obj.rotation.z = THREE.MathUtils.lerp(obj.rotation.z, rz, damp);
@@ -791,12 +795,15 @@ function CameraRig({ scrollRef, isReducedMotion }) {
   const { camera } = useThree();
   const target = useRef(new THREE.Vector3(0.8, -0.1, 0));
   const pos = useRef(new THREE.Vector3(0, 0.8, 12));
+  const nextPosition = useRef(new THREE.Vector3());
+  const nextTarget = useRef(new THREE.Vector3());
 
   useFrame((_, delta) => {
     const damp = 1 - Math.exp(-6 * delta);
 
     if (isReducedMotion) {
-      camera.position.lerp(new THREE.Vector3(0, 0.8, 12), damp);
+      camera.position.set(0, 0.8, 12);
+      target.current.set(0.8, -0.1, 0);
       camera.lookAt(target.current);
       return;
     }
@@ -913,8 +920,8 @@ function CameraRig({ scrollRef, isReducedMotion }) {
       tz = 0.0;
     }
 
-    pos.current.lerp(new THREE.Vector3(cx, cy, cz), damp);
-    target.current.lerp(new THREE.Vector3(tx, ty, tz), damp);
+    pos.current.lerp(nextPosition.current.set(cx, cy, cz), damp);
+    target.current.lerp(nextTarget.current.set(tx, ty, tz), damp);
 
     camera.position.copy(pos.current);
     camera.lookAt(target.current);
@@ -929,26 +936,25 @@ function CameraRig({ scrollRef, isReducedMotion }) {
 function SceneLighting() {
   return (
     <>
-      <ambientLight intensity={1.1} color="#FFF8EF" />
+      <ambientLight intensity={1.6} color="#f4f8ff" />
       {/* Primary Golden Sun Key Rays */}
       <directionalLight
         position={[14, 22, 16]}
-        intensity={5.8}
-        color="#FFF6E0"
+        intensity={3.8}
+        color="#fffaf2"
         castShadow
         shadow-bias={-0.0001}
       />
       {/* Specular Sun Ray Grazing Light */}
-      <directionalLight position={[4, 16, 10]} intensity={4.5} color="#FFE4A8" />
+      <directionalLight position={[4, 16, 10]} intensity={1.5} color="#ffffff" />
       {/* Solar Rim Highlight */}
-      <directionalLight position={[-6, 12, 8]} intensity={3.0} color="#FFD182" />
+      <directionalLight position={[-6, 12, 8]} intensity={1.5} color="#d6e6f3" />
       {/* Aviation Flame Orange Horizon */}
-      <directionalLight position={[-8, 3, -4]} intensity={1.6} color="#F47A24" />
+      <directionalLight position={[-8, 3, -4]} intensity={0.5} color="#ffffff" />
       {/* Royal Blue Atmospheric Fill */}
-      <directionalLight position={[0, 10, -12]} intensity={2.2} color="#1D4ED8" />
+      <directionalLight position={[0, 10, -12]} intensity={1.2} color="#b4c8ff" />
       {/* Warm Ground Bounce */}
-      <directionalLight position={[0, -6, 2]} intensity={0.8} color="#E8A06C" />
-      <pointLight position={[1, 5, 6]} intensity={2.5} color="#FFDA9E" distance={25} />
+      <directionalLight position={[0, -6, 2]} intensity={0.8} color="#e8f1e9" />
     </>
   );
 }
@@ -960,6 +966,25 @@ export default function AircraftScene({ scrollRef }) {
   const aircraftRef = useRef(null);
   const mouseRef = useRef({ x: 0, y: 0 });
   const [isReducedMotion, setIsReducedMotion] = useState(false);
+  const [sceneVisible, setSceneVisible] = useState(true);
+
+  useEffect(() => {
+    const visibleSections = new Set();
+    const updateVisibility = () => setSceneVisible(!document.hidden && visibleSections.size > 0);
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) visibleSections.add(entry.target);
+        else visibleSections.delete(entry.target);
+      });
+      updateVisibility();
+    }, { rootMargin: '100px' });
+    ['intro', 'inmotion'].forEach(id => {
+      const section = document.getElementById(id);
+      if (section) observer.observe(section);
+    });
+    document.addEventListener('visibilitychange', updateVisibility);
+    return () => { observer.disconnect(); document.removeEventListener('visibilitychange', updateVisibility); };
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -993,6 +1018,7 @@ export default function AircraftScene({ scrollRef }) {
       aria-label="Interactive 3D Boeing 787 Aircraft Experience"
     >
       <Canvas
+        frameloop={isReducedMotion || !sceneVisible ? 'demand' : 'always'}
         camera={{ position: [0, 1.2, 12], fov: 45, near: 0.1, far: 200 }}
         gl={{
           antialias: true,
@@ -1001,7 +1027,7 @@ export default function AircraftScene({ scrollRef }) {
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.15,
         }}
-        dpr={[1, Math.min(window.devicePixelRatio, 2)]}
+        dpr={[1, 1.5]}
         style={{ background: 'transparent' }}
         onCreated={({ gl }) => {
           gl.setClearColor(0x000000, 0);
@@ -1010,16 +1036,6 @@ export default function AircraftScene({ scrollRef }) {
         }}
       >
         <SceneLighting />
-
-        {/* Atmospheric world layers (behind aircraft) */}
-        <WorldMap scrollRef={scrollRef} />
-        <CloudSystem scrollRef={scrollRef} />
-        <FlightRoute scrollRef={scrollRef} />
-        <TechGrid scrollRef={scrollRef} />
-        <DataNetwork scrollRef={scrollRef} />
-
-        {/* Particles */}
-        <Particles scrollRef={scrollRef} />
 
         {/* Main aircraft */}
         <AircraftModel

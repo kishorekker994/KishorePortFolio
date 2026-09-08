@@ -13,12 +13,14 @@
 
 .proj__cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
 }
 
 .proj__card {
   position: relative;
+  padding: 0;
+  min-width: 0;
   background: rgba(255,248,239,0.7);
   border: 1px solid rgba(11, 48, 138, 0.1);
   overflow: hidden;
@@ -40,7 +42,7 @@
 }
 
 .proj__card-inner {
-  padding: 2rem;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -51,6 +53,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 1rem;
 }
 
 .proj__card-type {
@@ -81,13 +84,13 @@
 
 .proj__card-title {
   color: var(--royal-blue, #0B308A);
-  font-size: clamp(1rem, 2vw, 2rem);
-  line-height: 0.95;
+  font-size: 1.5rem;
+  line-height: 1.15;
 }
 
 .proj__card-desc {
-  font-size: 0.82rem;
-  opacity: 0.6;
+  font-size: 0.875rem;
+  opacity: 0.8;
   line-height: 1.65;
 }
 
@@ -95,12 +98,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
   padding-top: 1rem;
   border-top: 1px solid rgba(21,21,21,0.06);
 }
 
 .proj__card-tag {
-  opacity: 0.4;
+  opacity: 0.7;
   font-size: 0.6rem;
 }
 
@@ -111,9 +115,11 @@
 }
 
 @media (max-width: 1024px) {
-  .proj__cards { grid-template-columns: 1fr 1fr; }
+  .proj__cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 768px) {
   .proj__cards { grid-template-columns: 1fr; }
+  .proj__card-inner { padding: 1.25rem; }
+  .proj__card-title { font-size: 1.25rem; }
 }

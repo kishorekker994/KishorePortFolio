@@ -35,4 +35,10 @@ export default [
       ],
     },
   },
+  {
+    files: ['src/scenes/FlightScene.jsx', 'src/scenes/AirportEnvironment.jsx', 'src/scenes/AirportTrees.jsx', 'src/scenes/GrassVerge.jsx', 'src/scenes/Cityscape.jsx'],
+    rules: {
+      'react/no-unknown-property': 'off',
+    },
+  },
 ]
