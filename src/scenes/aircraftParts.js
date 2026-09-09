@@ -33,7 +33,7 @@ export function separateLandingGear(geometry) {
   const categories = new Map();
   components.forEach((bounds, root) => {
     const nose = bounds.min.x > -5 && bounds.max.x < 5 && bounds.min.z > 68 && bounds.max.z < 85;
-    const main = bounds.min.z > 4 && bounds.max.z < 22 && bounds.min.x > -19 && bounds.max.x < 19;
+    const main = bounds.min.z > 4 && bounds.max.z < 22 && bounds.min.x > -24 && bounds.max.x < 24;
     const gear = bounds.max.y < 15 && (nose || main);
     categories.set(root, gear ? nose ? 1 : bounds.max.x < 0 ? 2 : 3 : 0);
   });

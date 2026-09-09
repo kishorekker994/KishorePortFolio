@@ -151,6 +151,41 @@ for (const width of [390, 1440]) {
   });
 }
 
+test('opening scenery stays framed after leaving fullscreen and resizing', async ({ page }, testInfo) => {
+  test.setTimeout(120000);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('http://127.0.0.1:5175/');
+  await expect(page.locator('.flight-intro')).toHaveCount(0);
+  await expect.poll(async () => (await snapshot(page)).visibleTrees, { timeout: 30000 }).toBeGreaterThan(0);
+  for (const viewport of [{ width: 1440, height: 800 }, { width: 1366, height: 650 }, { width: 1024, height: 600 }, { width: 900, height: 500 }, { width: 390, height: 844 }, { width: 1920, height: 1080 }]) {
+    await page.setViewportSize(viewport);
+    await expect(page.locator('#aircraft-canvas')).toHaveCSS('visibility', 'visible');
+    await expect.poll(async () => {
+      const opening = await snapshot(page);
+      return opening.tower.top > opening.clipTop + 5 && opening.tower.bottom < opening.clipBottom - 5 && opening.visibleTrees > 0;
+    }, { message: `Landmarks should fit at ${viewport.width}x${viewport.height}`, timeout: 10000 }).toBe(true);
+    await expect(page.locator('#aircraft-canvas')).toHaveCSS('opacity', '1');
+    const rendering = await page.evaluate(async () => {
+      const fiber = await import('/node_modules/.vite/deps/@react-three_fiber.js');
+      const canvas = document.querySelector('#aircraft-canvas canvas');
+      const state = fiber._roots.get(canvas).store.getState();
+      state.gl.render(state.scene, state.camera);
+      const context = state.gl.getContext();
+      const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+      context.readPixels(0, 0, canvas.width, canvas.height, context.RGBA, context.UNSIGNED_BYTE, pixels);
+      let painted = 0;
+      for (let offset = 3; offset < pixels.length; offset += 4) if (pixels[offset] > 0) painted++;
+      return { width: state.size.width, height: state.size.height, resolution: canvas.width / state.size.width, dpr: state.viewport.dpr, painted };
+    });
+    expect(rendering.width).toBe(viewport.width);
+    expect(rendering.height).toBe(viewport.height);
+    expect(rendering.resolution).toBeCloseTo(rendering.dpr, 2);
+    expect(rendering.painted).toBeGreaterThan(1000);
+    await page.screenshot({ path: testInfo.outputPath(`resized-${viewport.width}x${viewport.height}.png`) });
+  }
+});
+
 test('runway markings stay fixed while scroll is stationary', async ({ page }) => {
   test.setTimeout(60000);
   await page.setViewportSize({ width: 1440, height: 800 });

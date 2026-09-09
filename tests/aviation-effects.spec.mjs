@@ -97,6 +97,10 @@ test('lights align, wind animates and gear retracts over the city', async ({ pag
   });
   await expect.poll(async () => (await sceneSnapshot(page)).planeHeight).toBeGreaterThan(0.2);
   await expect.poll(async () => Math.abs((await sceneSnapshot(page)).gear[0].rotation[0])).toBeGreaterThan(0.02);
+  const retracting = (await sceneSnapshot(page)).gear;
+  expect(retracting.every(gear => gear.visible)).toBe(true);
+  expect(retracting[1].rotation[2]).toBeCloseTo(-retracting[0].rotation[0], 6);
+  expect(retracting[2].rotation[2]).toBeCloseTo(retracting[0].rotation[0], 6);
   expect((await sceneSnapshot(page)).clouds).toBe(false);
   expect((await sceneSnapshot(page)).environment).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('gear-retracting.png') });
@@ -110,6 +114,19 @@ test('lights align, wind animates and gear retracts over the city', async ({ pag
   expect(cruise.clouds).toBe(true);
   expect(cruise.runway).toBe(false);
   await page.screenshot({ path: testInfo.outputPath('cruise-gear-up.png') });
+
+  await page.locator('#descent').evaluate(element => {
+    const distance = element.offsetHeight - innerHeight * 0.35 + 88;
+    scrollTo({ top: element.offsetTop - 88 + distance * 0.8, behavior: 'instant' });
+  });
+  await expect.poll(async () => {
+    const gear = (await sceneSnapshot(page)).gear;
+    return gear.every(part => part.visible) && Math.abs(gear[0].rotation[0]) > 0.1 && Math.abs(gear[0].rotation[0]) < 1.4;
+  }).toBe(true);
+  const extending = (await sceneSnapshot(page)).gear;
+  expect(extending[1].rotation[2]).toBeCloseTo(-extending[0].rotation[0], 6);
+  expect(extending[2].rotation[2]).toBeCloseTo(extending[0].rotation[0], 6);
+  await page.screenshot({ path: testInfo.outputPath('gear-extending.png') });
 
   await page.locator('#runway').evaluate(element => element.scrollIntoView({ behavior: 'instant', block: 'start' }));
   await expect.poll(async () => (await sceneSnapshot(page)).gear.every(gear => gear.visible && gear.rotation.every(angle => Math.abs(angle) < 0.01))).toBe(true);

@@ -36,7 +36,7 @@ export default [
     },
   },
   {
-    files: ['src/scenes/FlightScene.jsx', 'src/scenes/AirportEnvironment.jsx', 'src/scenes/AirportTrees.jsx', 'src/scenes/GrassVerge.jsx', 'src/scenes/Cityscape.jsx'],
+    files: ['src/scenes/FlightScene.jsx', 'src/scenes/AirportEnvironment.jsx', 'src/scenes/AirportTrees.jsx', 'src/scenes/GrassVerge.jsx', 'src/scenes/Cityscape.jsx', 'src/scenes/AirportBillboard.jsx', 'src/components/HeroPortrait.jsx'],
     rules: {
       'react/no-unknown-property': 'off',
     },

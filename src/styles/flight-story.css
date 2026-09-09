@@ -28,6 +28,21 @@
 .folio-section:nth-of-type(3n)::before { background-image: radial-gradient(rgb(64 43 86 / 18%) 0.8px, transparent 0.8px); background-size: 14px 14px; mask-image: linear-gradient(90deg, transparent 20%, black); }
 .folio-section:nth-of-type(4n)::before { background-image: repeating-linear-gradient(135deg, transparent, transparent 14px, rgb(64 43 86 / 7%) 14px, rgb(64 43 86 / 7%) 15px); }
 .travel-section::before, .impact-section::before, .architecture-section::before, .contact-section::before { background-image: radial-gradient(rgb(246 243 252 / 18%) 0.8px, transparent 0.8px); background-size: 20px 20px; }
+@media (max-height: 750px) {
+  .hero-content { padding-top: 6rem; }
+  .hero-overline { margin-bottom: 0.75rem; }
+  #main-content .hero-copy h1 { font-size: 3rem; }
+  #main-content .hero-copy p { font-size: 1rem; margin-top: 0.75rem; }
+  .hero-copy .hero-actions { margin-top: 0.75rem; }
+  .hero-bottom { padding-bottom: 1rem; }
+}
+@media (max-height: 550px) {
+  .hero-overline { margin-bottom: 0.5rem; }
+  #main-content .hero-copy h1 { font-size: 2rem; }
+  #main-content .hero-copy p { font-size: 0.875rem; margin-top: 0.5rem; }
+  .hero-copy .hero-actions { margin-top: 0.5rem; }
+  .hero-bottom { padding-block: 0.5rem; }
+}
 @media (max-width: 700px) {
   .flight-chapter { min-height: 150svh; }
   #landing.flight-chapter { min-height: calc(175svh + 44px); }

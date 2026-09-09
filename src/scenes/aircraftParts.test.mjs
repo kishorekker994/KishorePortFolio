@@ -23,6 +23,11 @@ test('original aircraft gear separates without dropping or duplicating triangles
   assert.equal(parts.reduce((total, part) => total + part.length, 0), geometry.index.count);
   assert.ok(parts[0].length > geometry.index.count * 0.5);
   const point = new Vector3();
+  const fixedWheelVertices = parts[0].filter(index => {
+    point.fromBufferAttribute(geometry.attributes.position, index);
+    return point.y < 5 && Math.abs(point.x) < 24 && point.z > 4 && point.z < 22;
+  });
+  assert.equal(fixedWheelVertices.length, 0, 'Main-wheel geometry must retract with the gear, not remain in the fixed body');
   parts.slice(1).forEach(part => {
     assert.ok(part.length > 100, 'Each gear includes wheels and struts');
     const bounds = new Box3();

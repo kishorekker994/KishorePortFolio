@@ -9,6 +9,7 @@ import { AirportEnvironment, AirportTerminal, Cloudscape, Passenger, TaxiwayPave
 import { rigLandingGear } from './aircraftParts';
 import useLightTexture from './useLightTexture';
 import Cityscape from './Cityscape';
+import AirportBillboard from './AirportBillboard';
 
 function disposeModel(scene) {
   const geometries = new Set();
@@ -221,7 +222,7 @@ function FlightWorld({ journey, revision }) {
   const terminal = useRef(null);
   const bridge = useRef(null);
   const passengers = useRef(null);
-  const { viewport, size, camera, invalidate } = useThree();
+  const { size, camera, invalidate } = useThree();
   useFrame((state, delta) => {
     journey.current.progress = journey.current.reduced ? journey.current.target : advanceFlight(journey.current.progress, journey.current.target, delta);
   }, -1);
@@ -236,11 +237,15 @@ function FlightWorld({ journey, revision }) {
     const pose = sampleFlight(progress);
     journey.current.distance = pose.distance;
     const intro = revision.chapter === 'intro';
-    const horizontalSpan = size.width <= 700 ? revision.chapter === 'arrival' ? 11.5 : 10 : 11;
-    const scale = Math.min(viewport.width / horizontalSpan, viewport.height * journey.current.available / (intro ? 5.5 : 4.5));
-    world.current.scale.setScalar(journey.current.reduced ? scale : MathUtils.damp(world.current.scale.x, scale, 12, Math.min(delta, 0.05)));
-    camera.setViewOffset(size.width, size.height, 0, (0.5 - journey.current.center) * size.height, size.width, size.height);
-    world.current.position.y = -scale * (intro ? 0.7 : 0.4);
+    const horizontalSpan = size.width <= 700 ? revision.chapter === 'arrival' ? 18 : intro ? 11 : 10 : 11;
+    const viewportHeight = 2 * Math.tan(MathUtils.degToRad(camera.fov / 2)) * camera.position.length();
+    const scale = Math.min(viewportHeight * size.width / size.height / horizontalSpan, viewportHeight * journey.current.available / (intro ? 5.5 : 4.5));
+    const worldScale = 0.7;
+    const zoom = Math.max(0.001, scale / worldScale);
+    camera.zoom = journey.current.reduced ? zoom : MathUtils.damp(camera.zoom, zoom, 12, Math.min(delta, 0.05));
+    world.current.scale.setScalar(worldScale);
+    camera.setViewOffset(size.width, size.height, size.width <= 700 ? size.width * (revision.chapter === 'arrival' ? 0.1 : intro ? -0.04 : 0) : 0, (0.5 - journey.current.center) * size.height, size.width, size.height);
+    world.current.position.y = -worldScale * (intro ? 0.7 : 0.4);
     runway.current.visible = revision.chapter !== 'inmotion';
     runway.current.position.y = -0.85 - pose.height * 1.6;
     runwayStrip.current.position.set(pose.distance % 12, 0, -pose.lateral);
@@ -286,6 +291,7 @@ function FlightWorld({ journey, revision }) {
       <AirportEnvironment journey={journey} />
       </group>
       <Cityscape journey={journey} />
+      <AirportBillboard journey={journey} />
       <group ref={apron}>
         <mesh position={[0, 0.021, -2]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[40, 14]} /><meshStandardMaterial color="#8e9493" roughness={1} /></mesh>
         {Array.from({ length: 15 }, (_, index) => <mesh key={index} position={[(index - 7) * 3, 0.024, -2]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.012, 14]} /><meshBasicMaterial color="#737a79" /></mesh>)}
@@ -355,11 +361,11 @@ export default function FlightScene() {
       const footerTop = footer?.top ?? rect.bottom;
       const bottom = Math.min(height, rect.bottom, footerTop - 20);
       const requested = storyProgress(rect.top, rect.height, height, from, to);
-      const progress = media.matches ? (element.id === 'arrival' ? 9 : (from + to) / 2) : requested;
+      const progress = media.matches ? (element.id === 'arrival' ? 9 : element.id === 'intro' ? from : (from + to) / 2) : requested;
       const framing = flightFraming(stage.top, heading?.bottom ?? stage.top, footerTop, height, element.id === 'intro' ? 0 : 88);
       journey.current = { progress: journey.current.progress, target: progress, chapter: element.id, ...framing, reduced: media.matches };
       const visible = bottom - top > 60;
-      setView({ visible, top, bottom: height - bottom, chapter: element.id, progress, reduced: media.matches, frame: framing.available, opacity: MathUtils.smoothstep(bottom - top, 60, 170) });
+      setView({ visible, top, bottom: height - bottom, chapter: element.id, progress, reduced: media.matches, frame: framing.available, opacity: MathUtils.smoothstep(bottom - top, 0, Math.max(1, Math.min(170, framing.available * height))) });
     };
     const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); };
     media.addEventListener('change', schedule);
