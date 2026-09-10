@@ -59,6 +59,81 @@ for (const width of [390, 1440]) {
   });
 }
 
+test('cruise framing keeps aircraft prominent in windowed views', async ({ page }, testInfo) => {
+  test.setTimeout(120000);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(url);
+  await expect(page.locator('.flight-intro')).toHaveCount(0);
+  await expect.poll(() => page.evaluate(async () => {
+    const canvas = document.querySelector('#aircraft-canvas canvas');
+    if (!canvas) return false;
+    const fiber = await import('/node_modules/.vite/deps/@react-three_fiber.js');
+    return !!fiber._roots.get(canvas)?.store.getState().scene.getObjectByName('node_id30');
+  }), { timeout: 45000 }).toBe(true);
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 1366, height: 650 }, { width: 1024, height: 600 }, { width: 900, height: 500 }, { width: 844, height: 390 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await settleScroll(page);
+    await page.locator('#inmotion').evaluate(element => scrollTo({ top: element.getBoundingClientRect().top + scrollY - 88 + (element.offsetHeight - innerHeight + 88) / 2, behavior: 'instant' }));
+    await settleScroll(page);
+    const canvas = page.locator('#aircraft-canvas');
+    await expect(canvas).toHaveAttribute('data-flight-chapter', 'inmotion');
+    const frame = await page.evaluate(async () => {
+      const root = document.querySelector('#aircraft-canvas');
+      const canvas = root.querySelector('canvas');
+      const fiber = await import('/node_modules/.vite/deps/@react-three_fiber.js');
+      const { Box3, Vector3 } = await import('/node_modules/.vite/deps/three.js');
+      const state = fiber._roots.get(canvas).store.getState();
+      state.gl.render(state.scene, state.camera);
+      const aircraft = state.scene.getObjectByName('node_id30');
+      const vertices = aircraft.geometry.attributes.position;
+      const indices = aircraft.geometry.index;
+      const bounds = new Box3();
+      const vertex = new Vector3();
+      for (let vertexIndex = 0; vertexIndex < (indices?.count ?? vertices.count); vertexIndex++) {
+        vertex.fromBufferAttribute(vertices, indices ? indices.getX(vertexIndex) : vertexIndex).applyMatrix4(aircraft.matrixWorld).project(state.camera);
+        bounds.expandByPoint(vertex);
+      }
+      const left = (bounds.min.x + 1) * innerWidth / 2;
+      const right = (bounds.max.x + 1) * innerWidth / 2;
+      const top = (1 - bounds.max.y) * innerHeight / 2;
+      const bottom = (1 - bounds.min.y) * innerHeight / 2;
+      const clip = getComputedStyle(root).clipPath.match(/[\d.]+/g).map(Number);
+      const context = state.gl.getContext();
+      const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+      context.readPixels(0, 0, canvas.width, canvas.height, context.RGBA, context.UNSIGNED_BYTE, pixels);
+      const clouds = state.scene.getObjectByName('altitude-clouds');
+      const cloudsVisible = clouds.visible;
+      clouds.visible = false;
+      state.gl.render(state.scene, state.camera);
+      const withoutClouds = new Uint8Array(pixels.length);
+      context.readPixels(0, 0, canvas.width, canvas.height, context.RGBA, context.UNSIGNED_BYTE, withoutClouds);
+      clouds.visible = cloudsVisible;
+      state.gl.render(state.scene, state.camera);
+      let paintedPixels = 0;
+      let cloudPixels = 0;
+      const pixelRatio = canvas.height / innerHeight;
+      for (let row = Math.ceil(clip[2] * pixelRatio); row < Math.floor((innerHeight - clip[0]) * pixelRatio); row++) {
+        for (let column = 0; column < canvas.width; column++) {
+          const offset = (row * canvas.width + column) * 4;
+          if (pixels[offset + 3] > 0 && pixels[offset] + pixels[offset + 1] + pixels[offset + 2] > 0) paintedPixels++;
+          if (Math.abs(pixels[offset] - withoutClouds[offset]) + Math.abs(pixels[offset + 1] - withoutClouds[offset + 1]) + Math.abs(pixels[offset + 2] - withoutClouds[offset + 2]) > 8) cloudPixels++;
+        }
+      }
+      return { left, right, top, bottom, width: right - left, clipTop: clip[0], clipBottom: innerHeight - clip[2], cloudsVisible, paintedPixels, cloudPixels };
+    });
+    await page.screenshot({ path: testInfo.outputPath(`cruise-${viewport.width}x${viewport.height}.png`) });
+    expect.soft(frame.width, `aircraft width at ${viewport.width}x${viewport.height}`).toBeGreaterThan(viewport.width * 0.4);
+    expect.soft(frame.left).toBeGreaterThanOrEqual(0);
+    expect.soft(frame.right).toBeLessThanOrEqual(viewport.width);
+    expect.soft(frame.top).toBeGreaterThanOrEqual(frame.clipTop);
+    expect.soft(frame.bottom).toBeLessThanOrEqual(frame.clipBottom);
+    expect.soft(frame.cloudsVisible).toBe(true);
+    expect.soft(frame.paintedPixels).toBeGreaterThan(100);
+    expect.soft(frame.cloudPixels).toBeGreaterThan(100);
+    expect.soft(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+});
+
 test('scroll smoothly advances and reverses takeoff', async ({ page }) => {
   test.setTimeout(60000);
   await page.setViewportSize({ width: 1440, height: 1000 });
