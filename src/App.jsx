@@ -20,6 +20,7 @@ import FlightChapter from './sections/FlightChapter';
 import { PortfolioNavigation, Intro, Experience, TravelTech, Pricing, RapidReprice, Impact, Technology, Architecture, HowIBuild, Leadership, InMotion, BeyondEnterprise, Projects, Contact } from './sections/PortfolioSections';
 
 gsap.registerPlugin(ScrollTrigger);
+ScrollTrigger.config({ ignoreMobileResize: true });
 
 export default function App() {
   const [loaded, setLoaded] = useState(false);
@@ -32,7 +33,7 @@ export default function App() {
     if (!loaded) return;
 
     const media = gsap.matchMedia();
-    media.add('(prefers-reduced-motion: no-preference)', () => {
+    media.add('(prefers-reduced-motion: no-preference) and (pointer: fine)', () => {
       const lenis = new Lenis({
         lerp: 0.085,
         smoothWheel: true,
@@ -52,20 +53,9 @@ export default function App() {
       };
     });
 
-    // Master scroll progress tracker — drives aircraft & 3D environment
-    const trigger = ScrollTrigger.create({
-      trigger: document.body,
-      start: 'top top',
-      end: 'bottom bottom',
-      onUpdate: (self) => {
-        scrollRef.current = self.progress;
-      },
-    });
-
     ScrollTrigger.refresh();
 
     return () => {
-      trigger.kill();
       media.revert();
     };
   }, [loaded]);

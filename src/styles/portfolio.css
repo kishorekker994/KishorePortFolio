@@ -755,8 +755,3 @@ button:disabled { cursor: default; }
   .contact-links > div:first-child { grid-column: auto; }
   .contact-links > div:last-child { grid-column: auto; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .folio-section *, .flight-hero *, .motion-section * { animation: none !important; transition: none !important; }
-  .build-step { position: relative; top: auto !important; }
-  [data-depth], [data-reveal] { transform: none !important; opacity: 1 !important; }
-}

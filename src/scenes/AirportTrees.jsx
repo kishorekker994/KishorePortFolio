@@ -55,12 +55,13 @@ export default function AirportTrees({ journey }) {
     };
   }, [invalidate]);
   useFrame(({ clock }) => {
+    if (!journey.current.visible || journey.current.chapter === 'inmotion') return;
     if (forest) forest.children.forEach((tree, index) => {
-      const wind = journey.current.reduced ? 0 : Math.sin(clock.elapsedTime * 0.85 + index * 0.6) * 0.018 + Math.sin(clock.elapsedTime * 1.7 + index) * 0.008;
+      const wind = Math.sin(clock.elapsedTime * 0.85 + index * 0.6) * 0.018 + Math.sin(clock.elapsedTime * 1.7 + index) * 0.008;
       tree.rotation.z = wind;
       tree.rotation.x = wind * 0.45;
     });
-    trees.current.forEach(tree => tree.update(journey.current.reduced ? 0 : clock.elapsedTime * 0.65));
+    trees.current.forEach(tree => tree.update(clock.elapsedTime * 0.65));
   });
   return forest && <primitive object={forest} dispose={null} />;
 }

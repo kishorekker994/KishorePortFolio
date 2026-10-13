@@ -174,7 +174,7 @@ for (const viewport of [{ width: 1440, height: 800 }, { width: 390, height: 844 
     await expect(page.locator('.flight-intro')).toHaveCount(0);
     await expect.poll(async () => (await billboardSnapshot(page))?.texture, { timeout: 30000 }).toBe(1060);
     for (const chapter of ['intro', 'arrival']) {
-      if (chapter === 'arrival') await page.locator('#arrival').evaluate(element => element.scrollIntoView({ behavior: 'instant' }));
+      if (chapter === 'arrival') await page.locator('#arrival').evaluate(element => scrollTo({ top: element.offsetTop + element.offsetHeight - innerHeight, behavior: 'instant' }));
       await expect(page.locator('#aircraft-canvas')).toHaveAttribute('data-flight-chapter', chapter);
       await page.evaluate(() => new Promise(resolve => {
         let stable = 0;

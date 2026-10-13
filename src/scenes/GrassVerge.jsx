@@ -26,7 +26,10 @@ export default function GrassVerge({ journey }) {
     blades.current.instanceMatrix.needsUpdate = true;
     blades.current.instanceColor.needsUpdate = true;
   }, []);
-  useFrame(({ clock }) => { wind.value = journey.current.reduced ? 0 : clock.elapsedTime; });
+  useFrame(({ clock }) => {
+    if (!journey.current.visible || journey.current.chapter === 'inmotion') return;
+    wind.value = clock.elapsedTime;
+  });
   return <group name="wind-grass-verges">
     <mesh position={[0, 0.006, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[320, 280]} /><meshBasicMaterial key={texture?.uuid ?? 'loading'} color="#d0dfb2" map={texture} /></mesh>
     <instancedMesh ref={blades} args={[null, null, count]} frustumCulled={false}>

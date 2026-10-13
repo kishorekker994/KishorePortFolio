@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
 import { CanvasTexture, RepeatWrapping, SRGBColorSpace } from 'three';
 
+const surfaceTextures = new Map();
+
 export default function useSurfaceTexture(kind) {
-  const [texture, setTexture] = useState(null);
-  useEffect(() => {
+  if (typeof document === 'undefined') return null;
+  if (!surfaceTextures.has(kind)) {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 256;
@@ -34,8 +35,7 @@ export default function useSurfaceTexture(kind) {
     surface.wrapS = surface.wrapT = RepeatWrapping;
     surface.repeat.set(kind === 'grass' ? 80 : 2, kind === 'grass' ? 48 : 2);
     surface.anisotropy = 4;
-    setTexture(surface);
-    return () => surface.dispose();
-  }, [kind]);
-  return texture;
+    surfaceTextures.set(kind, surface);
+  }
+  return surfaceTextures.get(kind);
 }

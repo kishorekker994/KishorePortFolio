@@ -28,7 +28,8 @@ function AirportFence({ journey }) {
     for (const mesh of [posts.current, footings.current, wires.current, lamps.current]) mesh.instanceMatrix.needsUpdate = true;
   }, [lightPositions]);
   useFrame(({ clock }) => {
-    const pulse = journey.current.reduced ? 0.65 : clock.elapsedTime % 1.8 < 0.5 ? 1 : 0.08;
+    if (!journey.current.visible || journey.current.chapter === 'inmotion') return;
+    const pulse = clock.elapsedTime % 1.8 < 0.5 ? 1 : 0.08;
     lamps.current.material.opacity = pulse;
     if (halos.current) halos.current.material.opacity = pulse * 0.75;
   });
@@ -58,13 +59,13 @@ export function TaxiwayPavement({ from = 4, to = 0 }) {
     return new Float32Array(positions);
   });
   return <group>
-    <mesh position={[0, 0.028, 0]}><bufferGeometry><bufferAttribute attach="attributes-position" args={[vertices, 3]} /></bufferGeometry><meshBasicMaterial color="#414447" /></mesh>
+    <mesh position={[0, 0.028, 0]}><bufferGeometry><bufferAttribute attach="attributes-position" args={[vertices, 3]} /></bufferGeometry><meshBasicMaterial color="#414447" polygonOffset polygonOffsetFactor={-6} polygonOffsetUnits={-6} /></mesh>
     {Array.from({ length: 60 }, (_, index) => {
       const taxi = index / 60;
       const next = (index + 1) / 60;
       const lateral = MathUtils.lerp(from, to, MathUtils.smoothstep(taxi, 0, 1));
       const nextLateral = MathUtils.lerp(from, to, MathUtils.smoothstep(next, 0, 1));
-      return <mesh key={index} position={[-(taxi + next) * 6, 0.034, (lateral + nextLateral) / 2]} rotation={[-Math.PI / 2, 0, Math.atan2(lateral - nextLateral, -(next - taxi) * 12)]}><planeGeometry args={[Math.hypot(0.2, nextLateral - lateral) + 0.005, 0.045]} /><meshBasicMaterial color="#ecc34f" /></mesh>;
+      return <mesh key={index} position={[-(taxi + next) * 6, 0.034, (lateral + nextLateral) / 2]} rotation={[-Math.PI / 2, 0, Math.atan2(lateral - nextLateral, -(next - taxi) * 12)]}><planeGeometry args={[Math.hypot(0.2, nextLateral - lateral) + 0.005, 0.045]} /><meshBasicMaterial color="#ecc34f" polygonOffset polygonOffsetFactor={-7} polygonOffsetUnits={-7} /></mesh>;
     })}
   </group>;
 }
@@ -106,10 +107,10 @@ export function AirportEnvironment({ journey }) {
   const beacon = useRef(null);
   useFrame(({ clock }) => {
     const distance = sampleFlight(journey.current.progress).distance;
-    environment.current.position.x = distance - distance % 12 - (journey.current.progress >= 5 ? 108 : 0);
+    environment.current.position.x = distance - distance % 12 - (journey.current.progress >= 4.5 ? 108 : 0);
     environment.current.visible = true;
     tower.current.scale.setScalar(0.55);
-    beacon.current.material.opacity = journey.current.reduced || clock.elapsedTime % 1.4 < 0.16 ? 1 : 0.08;
+    beacon.current.material.opacity = clock.elapsedTime % 1.4 < 0.16 ? 1 : 0.08;
   });
   return <group ref={environment} name="airport-environment">
     <GrassVerge journey={journey} />
@@ -151,7 +152,8 @@ export function Passenger({ index, journey, seated = false }) {
   const skin = ['#bf8966', '#8f5d43', '#e0b695', '#ab7553', '#c89c7b'][index];
   const jacket = ['#344c60', '#a57865', '#576958', '#494c55', '#777a95'][index];
   useFrame(() => {
-    const stride = seated ? 0 : Math.sin(sampleFlight(journey.current.progress).disembark * 90 + index * 1.6) * 0.4;
+    if (seated || !journey.current.visible || journey.current.progress < 8) return;
+    const stride = Math.sin(sampleFlight(journey.current.progress).disembark * 90 + index * 1.6) * 0.4;
     limbs.current.children.forEach((limb, limbIndex) => { limb.rotation.x = limbIndex % 2 ? stride : -stride; });
   });
   return <group scale={0.92 + index % 3 * 0.06}>

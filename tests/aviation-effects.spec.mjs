@@ -132,8 +132,9 @@ test('lights align, wind animates and gear retracts over the city', async ({ pag
   await expect.poll(async () => (await sceneSnapshot(page)).gear.every(gear => gear.visible && gear.rotation.every(angle => Math.abs(angle) < 0.01))).toBe(true);
   await expect.poll(async () => (await sceneSnapshot(page)).planeHeight).toBeLessThan(0.001);
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await expect.poll(async () => (await sceneSnapshot(page)).treeAngles.every(angle => angle === 0)).toBe(true);
-  await expect.poll(async () => (await sceneSnapshot(page)).strobes).toEqual([0.6, 0.6]);
+  const reducedStart = await sceneSnapshot(page);
+  await expect.poll(async () => (await sceneSnapshot(page)).treeAngles[0]).not.toBe(reducedStart.treeAngles[0]);
+  await expect.poll(async () => (await sceneSnapshot(page)).strobes, { intervals: [80, 110, 150], timeout: 10000 }).not.toEqual(reducedStart.strobes);
 });
 
 for (const width of [390, 1440]) {
@@ -157,7 +158,7 @@ for (const width of [390, 1440]) {
     await expect.poll(async () => (await sceneSnapshot(page)).runway).toBe(true);
     expect((await sceneSnapshot(page)).clouds).toBe(false);
     expect((await sceneSnapshot(page)).environment).toBe(true);
-    await page.locator('#arrival').evaluate(element => element.scrollIntoView({ behavior: 'instant', block: 'start' }));
+    await page.locator('#arrival').evaluate(element => scrollTo({ top: element.offsetTop + element.offsetHeight - innerHeight, behavior: 'instant' }));
     await expect(page.locator('#aircraft-canvas')).toHaveAttribute('data-flight-chapter', 'arrival');
     await expect.poll(async () => (await sceneSnapshot(page)).bridgeExtension).toBe(1);
     const gate = await sceneSnapshot(page);

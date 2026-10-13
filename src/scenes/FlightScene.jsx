@@ -126,7 +126,7 @@ function Aircraft({ journey }) {
     });
     wingStrobes.current.forEach((strobe, index) => {
       const phase = (clock.elapsedTime + index * 0.03) % 1.6;
-      strobe.material.opacity = journey.current.reduced ? 0.6 : phase < 0.1 || (phase > 0.22 && phase < 0.3) ? 1 : 0;
+      strobe.material.opacity = phase < 0.1 || (phase > 0.22 && phase < 0.3) ? 1 : 0;
     });
   });
 
@@ -151,11 +151,10 @@ function AirportLights({ journey }) {
   const spill = useRef(null);
   const strobes = useRef(null);
   useFrame(({ clock }) => {
-    if (!strobes.current || !lenses.current?.instanceColor) return;
-    for (let index = 0; index < fixtures.count; index++) {
+    if (!journey.current.visible || journey.current.chapter === 'inmotion' || !strobes.current || !lenses.current?.instanceColor) return;
+    for (let index = 40; index < 80; index++) {
       const phase = (clock.elapsedTime * 0.7 - (index % 6) / 6 + 100) % 1;
-      const flashing = fixtures.positions[index * 3 + 2] === Math.fround(2.12);
-      const pulse = !flashing || journey.current.reduced ? 1 : phase < 0.18 ? 3 : 0.22;
+      const pulse = phase < 0.18 ? 3 : 0.22;
       const red = fixtures.colors[index * 3] * pulse;
       const green = fixtures.colors[index * 3 + 1] * pulse;
       const blue = fixtures.colors[index * 3 + 2] * pulse;
@@ -209,7 +208,12 @@ function AirportLights({ journey }) {
 
 AirportLights.propTypes = { journey: PropTypes.shape({ current: PropTypes.object }).isRequired };
 
-function FlightWorld({ journey, revision }) {
+const CANVAS_DPR = [1, 1.5];
+const CANVAS_CAMERA = { position: [0, 1.8, 14], fov: 45, near: 1, far: 150 };
+const CANVAS_GL = { alpha: true, antialias: true, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.1 };
+const CANVAS_RESIZE = { scroll: false };
+
+function FlightWorld({ journey }) {
   const world = useRef(null);
   const runway = useRef(null);
   const runwayStrip = useRef(null);
@@ -222,31 +226,82 @@ function FlightWorld({ journey, revision }) {
   const terminal = useRef(null);
   const bridge = useRef(null);
   const passengers = useRef(null);
-  const { size, camera, invalidate } = useThree();
-  useFrame((state, delta) => {
-    journey.current.progress = journey.current.reduced ? journey.current.target : advanceFlight(journey.current.progress, journey.current.target, delta);
-  }, -1);
-  useEffect(() => { invalidate(); }, [revision, invalidate]);
+  const cameraState = useRef({ width: 0, height: 0, offsetX: 0, offsetY: 0 });
+  const { size, camera, scene, gl, invalidate } = useThree();
   useEffect(() => {
-    if (!revision.visible || revision.reduced) return undefined;
-    const timer = window.setInterval(invalidate, 1000 / 30);
-    return () => window.clearInterval(timer);
-  }, [revision.visible, revision.reduced, invalidate]);
+    const currentJourney = journey.current;
+    currentJourney.invalidate = invalidate;
+    const banner = scene.getObjectByName('grass-photo-billboard');
+    const groups = [runway.current, taxiConnector.current, arrivalConnector.current, apron.current, terminal.current].filter(Boolean);
+    const states = groups.map(group => group.visible);
+    groups.forEach(group => { group.visible = true; });
+    if (banner) {
+      const bannerVisible = banner.visible;
+      banner.visible = true;
+      gl.compile(scene, camera);
+      banner.visible = false;
+      gl.compile(scene, camera);
+      banner.visible = bannerVisible;
+    } else {
+      gl.compile(scene, camera);
+    }
+    groups.forEach((group, index) => { group.visible = states[index]; });
+    invalidate();
+    const timer = window.setInterval(() => {
+      if (currentJourney.visible && !document.hidden) invalidate();
+    }, 1000 / 30);
+    return () => {
+      window.clearInterval(timer);
+      currentJourney.invalidate = null;
+    };
+  }, [journey, scene, camera, gl, invalidate]);
   useFrame((state, delta) => {
+    if (!journey.current.visible || document.hidden) return;
+    if (journey.current.snap) {
+      journey.current.progress = journey.current.target;
+      journey.current.snap = false;
+    } else {
+      const next = advanceFlight(journey.current.progress, journey.current.target, delta);
+      if (Math.abs(next - journey.current.target) > 0.0005) {
+        journey.current.progress = next;
+        state.invalidate();
+      } else {
+        journey.current.progress = journey.current.target;
+      }
+    }
+  }, -1);
+  useFrame((state, delta) => {
+    if (!journey.current.visible) return;
     const progress = journey.current.progress;
+    const chapter = journey.current.chapter;
     const pose = sampleFlight(progress);
     journey.current.distance = pose.distance;
-    const intro = revision.chapter === 'intro';
-    const horizontalSpan = size.width <= 700 ? revision.chapter === 'arrival' ? 18 : intro ? 11 : 10 : 11;
+    const intro = chapter === 'intro';
+    const mobile = size.width <= 700;
+    const horizontalSpan = mobile ? chapter === 'arrival' ? 18 : intro ? 11 : 10 : 11;
     const viewportHeight = 2 * Math.tan(MathUtils.degToRad(camera.fov / 2)) * camera.position.length();
     const scale = Math.min(viewportHeight * size.width / size.height / horizontalSpan, viewportHeight * journey.current.available / (intro ? 5.5 : 4.5));
     const worldScale = 0.7;
     const zoom = Math.max(0.001, scale / worldScale);
-    camera.zoom = journey.current.reduced ? zoom : MathUtils.damp(camera.zoom, zoom, 12, Math.min(delta, 0.05));
+    const targetOffsetX = mobile ? size.width * (chapter === 'arrival' ? 0.1 : intro ? -0.04 : 0) : 0;
+    const targetOffsetY = (0.5 - journey.current.center) * size.height;
+    const sizeChanged = cameraState.current.width !== size.width || cameraState.current.height !== size.height;
+    if (journey.current.snapCamera || sizeChanged) {
+      camera.zoom = zoom;
+      cameraState.current.offsetX = targetOffsetX;
+      cameraState.current.offsetY = targetOffsetY;
+      cameraState.current.width = size.width;
+      cameraState.current.height = size.height;
+      journey.current.snapCamera = false;
+    } else {
+      camera.zoom = MathUtils.damp(camera.zoom, zoom, 12, Math.min(delta, 0.05));
+      cameraState.current.offsetX = MathUtils.damp(cameraState.current.offsetX, targetOffsetX, 12, Math.min(delta, 0.05));
+      cameraState.current.offsetY = MathUtils.damp(cameraState.current.offsetY, targetOffsetY, 12, Math.min(delta, 0.05));
+    }
     world.current.scale.setScalar(worldScale);
-    camera.setViewOffset(size.width, size.height, size.width <= 700 ? size.width * (revision.chapter === 'arrival' ? 0.1 : intro ? -0.04 : 0) : 0, (0.5 - journey.current.center) * size.height, size.width, size.height);
+    camera.setViewOffset(size.width, size.height, cameraState.current.offsetX, cameraState.current.offsetY, size.width, size.height);
     world.current.position.y = -worldScale * (intro ? 0.7 : 0.4);
-    runway.current.visible = revision.chapter !== 'inmotion';
+    runway.current.visible = chapter !== 'inmotion';
     runway.current.position.y = -0.85 - pose.height * 1.6;
     runwayStrip.current.position.set(pose.distance % 12, 0, -pose.lateral);
     taxiConnector.current.position.x = pose.distance - pose.distance % 12;
@@ -255,7 +310,7 @@ function FlightWorld({ journey, revision }) {
     arrivalConnector.current.visible = progress > 5.65;
     shadow.current.material.uniforms.strength.value = 0.2 * (1 - MathUtils.smoothstep(pose.height, 0, 1.5));
     markings.current.position.x = 0;
-    clouds.current.visible = revision.chapter === 'inmotion';
+    clouds.current.visible = chapter === 'inmotion';
     clouds.current.position.set((pose.distance - 68) * 0.12, pose.cloudHeight, -3);
     terminal.current.visible = progress > 5;
     apron.current.visible = progress > 5.65;
@@ -271,13 +326,13 @@ function FlightWorld({ journey, revision }) {
   });
   return <group ref={world} name="flight-world">
     <group ref={runway} name="runway-environment">
-      <mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[80, 40]} /><meshStandardMaterial color="#849278" roughness={1} /></mesh>
+      <mesh position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[80, 40]} /><meshStandardMaterial color="#849278" roughness={1} /></mesh>
       <group ref={runwayStrip}>
-      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[80, 4.6]} /><meshStandardMaterial color="#55575a" roughness={1} /></mesh>
-      <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[80, 4]} /><meshStandardMaterial color="#27232c" roughness={1} /></mesh>
-      {[-1.9, 1.9].map(edge => <mesh key={edge} position={[0, 0.026, edge]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[80, 0.045]} /><meshBasicMaterial color="#e4e3dd" /></mesh>)}
-      <mesh position={[0, 0.015, 4]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[80, 1.9]} /><meshStandardMaterial color="#36383b" roughness={1} /></mesh>
-      <mesh position={[0, 0.026, 4]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[80, 0.035]} /><meshBasicMaterial color="#ecc34f" /></mesh>
+      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[80, 4.6]} /><meshStandardMaterial color="#55575a" roughness={1} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1} /></mesh>
+      <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[80, 4]} /><meshStandardMaterial color="#27232c" roughness={1} polygonOffset polygonOffsetFactor={-2} polygonOffsetUnits={-2} /></mesh>
+      {[-1.9, 1.9].map(edge => <mesh key={edge} position={[0, 0.026, edge]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[80, 0.045]} /><meshBasicMaterial color="#e4e3dd" polygonOffset polygonOffsetFactor={-5} polygonOffsetUnits={-5} /></mesh>)}
+      <mesh position={[0, 0.015, 4]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[80, 1.9]} /><meshStandardMaterial color="#36383b" roughness={1} polygonOffset polygonOffsetFactor={-2} polygonOffsetUnits={-2} /></mesh>
+      <mesh position={[0, 0.026, 4]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[80, 0.035]} /><meshBasicMaterial color="#ecc34f" polygonOffset polygonOffsetFactor={-5} polygonOffsetUnits={-5} /></mesh>
       <group ref={taxiConnector}>
         <TaxiwayPavement />
       </group>
@@ -285,7 +340,7 @@ function FlightWorld({ journey, revision }) {
         <TaxiwayPavement from={0} to={-7} />
       </group>
       <group ref={markings} name="moving-runway-markings">
-        {Array.from({ length: 22 }, (_, index) => <mesh key={index} position={[(index - 11) * 3, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[1.4, 0.08]} /><meshBasicMaterial color="#f6f3fc" /></mesh>)}
+        {Array.from({ length: 22 }, (_, index) => <mesh key={index} position={[(index - 11) * 3, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[1.4, 0.08]} /><meshBasicMaterial color="#f6f3fc" polygonOffset polygonOffsetFactor={-5} polygonOffsetUnits={-5} /></mesh>)}
       </group>
       <AirportLights journey={journey} />
       <AirportEnvironment journey={journey} />
@@ -293,9 +348,9 @@ function FlightWorld({ journey, revision }) {
       <Cityscape journey={journey} />
       <AirportBillboard journey={journey} />
       <group ref={apron}>
-        <mesh position={[0, 0.021, -2]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[40, 14]} /><meshStandardMaterial color="#8e9493" roughness={1} /></mesh>
-        {Array.from({ length: 15 }, (_, index) => <mesh key={index} position={[(index - 7) * 3, 0.024, -2]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.012, 14]} /><meshBasicMaterial color="#737a79" /></mesh>)}
-        <mesh position={[0, 0.026, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[16, 0.04]} /><meshBasicMaterial color="#e1bd4f" /></mesh>
+        <mesh position={[0, 0.021, -2]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[40, 14]} /><meshStandardMaterial color="#8e9493" roughness={1} polygonOffset polygonOffsetFactor={-3} polygonOffsetUnits={-3} /></mesh>
+        {Array.from({ length: 15 }, (_, index) => <mesh key={index} position={[(index - 7) * 3, 0.024, -2]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.012, 14]} /><meshBasicMaterial color="#737a79" polygonOffset polygonOffsetFactor={-4} polygonOffsetUnits={-4} /></mesh>)}
+        <mesh position={[0, 0.026, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[16, 0.04]} /><meshBasicMaterial color="#e1bd4f" polygonOffset polygonOffsetFactor={-5} polygonOffsetUnits={-5} /></mesh>
       </group>
       <mesh ref={shadow} position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[3.8, 0.9, 1]}><planeGeometry args={[2, 2]} /><shaderMaterial transparent depthWrite={false} uniforms={{ strength: { value: 0.2 } }} vertexShader="varying vec2 shadowUv; void main() { shadowUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }" fragmentShader="varying vec2 shadowUv; uniform float strength; void main() { float falloff = 1.0 - smoothstep(0.05, 0.5, length(shadowUv - 0.5)); gl_FragColor = vec4(0.08, 0.06, 0.1, falloff * strength); }" /></mesh>
     </group>
@@ -327,7 +382,7 @@ function FlightWorld({ journey, revision }) {
   </group>;
 }
 
-FlightWorld.propTypes = { journey: PropTypes.shape({ current: PropTypes.object }).isRequired, revision: PropTypes.object.isRequired };
+FlightWorld.propTypes = { journey: PropTypes.shape({ current: PropTypes.object }).isRequired };
 
 class SceneBoundary extends Component {
   state = { failed: false };
@@ -339,48 +394,94 @@ class SceneBoundary extends Component {
 SceneBoundary.propTypes = { children: PropTypes.node };
 
 export default function FlightScene() {
-  const journey = useRef({ progress: 0, target: 0, center: 0.7, available: 0.3, reduced: false });
-  const [view, setView] = useState({ visible: true, top: 0, bottom: 0, chapter: 'intro', progress: 0, reduced: false });
+  const containerRef = useRef(null);
+  const journey = useRef({ progress: 0, target: 0, center: 0.7, available: 0.3, chapter: 'intro', visible: true, reduced: false, snap: true, snapCamera: true, measure: null, invalidate: null });
 
   useEffect(() => {
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const currentJourney = journey.current;
     let frame;
     const measure = () => {
-      const height = window.innerHeight;
+      const container = containerRef.current;
+      if (!container) return;
+      const height = container.clientHeight || window.innerHeight;
       const candidates = [...document.querySelectorAll('[data-flight-from]')].map(element => ({ element, rect: element.getBoundingClientRect() })).filter(({ rect }) => rect.bottom > 88 && rect.top < height);
       candidates.sort((first, second) => Math.min(height, second.rect.bottom) - Math.max(0, second.rect.top) - (Math.min(height, first.rect.bottom) - Math.max(0, first.rect.top)));
       const selected = candidates[0];
-      if (!selected || document.hidden) { setView(previous => previous.visible ? { ...previous, visible: false } : previous); return; }
+      if (!selected || document.hidden) {
+        currentJourney.visible = false;
+        container.style.visibility = 'hidden';
+        return;
+      }
       const { element, rect } = selected;
       const from = Number(element.dataset.flightFrom);
       const to = Number(element.dataset.flightTo);
       const stage = element.querySelector('.hero-content, .flight-chapter-content, .motion-section > .folio-container')?.getBoundingClientRect() ?? rect;
       const heading = element.querySelector('.hero-actions, .flight-chapter-heading, .motion-type')?.getBoundingClientRect();
       const footer = element.querySelector('.hero-bottom, .flight-chapter-footer, .motion-footer')?.getBoundingClientRect();
-      const top = Math.max(88, rect.top, (heading?.bottom ?? rect.top) + 24);
+      let top = Math.max(88, rect.top, (heading?.bottom ?? rect.top) + 24);
       const footerTop = footer?.top ?? rect.bottom;
-      const bottom = Math.min(height, rect.bottom, footerTop - 20);
-      const requested = storyProgress(rect.top, rect.height, height, from, to);
-      const progress = media.matches ? (element.id === 'arrival' ? 9 : element.id === 'intro' ? from : (from + to) / 2) : requested;
+      let bottom = Math.min(height, rect.bottom, footerTop - 20);
+      if (candidates.length > 1) {
+        const landingEntry = candidates.find(item => item.element.id === 'landing');
+        const arrivalEntry = candidates.find(item => item.element.id === 'arrival');
+        if (landingEntry && arrivalEntry) {
+          const landingStage = landingEntry.element.querySelector('.flight-chapter-content')?.getBoundingClientRect() ?? landingEntry.rect;
+          const landingHeading = landingEntry.element.querySelector('.flight-chapter-heading')?.getBoundingClientRect();
+          const arrivalFooter = arrivalEntry.element.querySelector('.flight-chapter-footer')?.getBoundingClientRect();
+          top = Math.max(88, (landingHeading?.bottom ?? landingStage.top) - landingStage.top + 88 + 24);
+          bottom = Math.min(height, arrivalEntry.rect.bottom, (arrivalFooter?.top ?? arrivalEntry.rect.bottom) - 20);
+        }
+      }
+      const progress = storyProgress(rect.top, rect.height, height, from, to);
       const framing = flightFraming(stage.top, heading?.bottom ?? stage.top, footerTop, height, element.id === 'intro' ? 0 : 88);
-      journey.current = { progress: journey.current.progress, target: progress, chapter: element.id, ...framing, reduced: media.matches };
       const visible = bottom - top > 60;
-      setView({ visible, top, bottom: height - bottom, chapter: element.id, progress, reduced: media.matches, frame: framing.available, opacity: MathUtils.smoothstep(bottom - top, 0, Math.max(1, Math.min(170, framing.available * height))) });
+      const wasVisible = currentJourney.visible;
+      const previousChapter = currentJourney.chapter;
+      const adjacentLandingArrival = (previousChapter === 'landing' && element.id === 'arrival') || (previousChapter === 'arrival' && element.id === 'landing');
+      if (!wasVisible || (previousChapter !== element.id && (!adjacentLandingArrival || Math.abs(progress - currentJourney.target) > 1.2))) {
+        currentJourney.progress = progress;
+        currentJourney.snap = true;
+        currentJourney.snapCamera = true;
+      }
+      currentJourney.target = progress;
+      currentJourney.chapter = element.id;
+      currentJourney.center = framing.center;
+      currentJourney.available = framing.available;
+      currentJourney.visible = visible;
+      currentJourney.reduced = false;
+      container.dataset.flightChapter = element.id;
+      container.dataset.flightProgress = progress.toFixed(3);
+      container.dataset.flightFrame = framing.available.toFixed(4);
+      container.style.visibility = visible ? 'visible' : 'hidden';
+      container.style.opacity = String(MathUtils.smoothstep(bottom - top, 0, Math.max(1, Math.min(170, framing.available * height))));
+      container.style.clipPath = `inset(${Math.max(0, top)}px 0 ${Math.max(0, height - bottom)}px)`;
     };
-    const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); };
-    media.addEventListener('change', schedule);
+    const schedule = () => {
+      measure();
+      if (currentJourney.visible) currentJourney.invalidate?.();
+    };
+    const scheduleResize = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(schedule);
+    };
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule);
     document.addEventListener('visibilitychange', schedule);
-    const observer = new ResizeObserver(schedule);
+    const observer = new ResizeObserver(scheduleResize);
     const main = document.getElementById('main-content');
     if (main) observer.observe(main);
     measure();
-    return () => { cancelAnimationFrame(frame); observer.disconnect(); media.removeEventListener('change', schedule); window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); document.removeEventListener('visibilitychange', schedule); };
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      document.removeEventListener('visibilitychange', schedule);
+    };
   }, []);
 
-  return <div id="aircraft-canvas" aria-hidden="true" data-flight-chapter={view.chapter} data-flight-progress={view.progress.toFixed(3)} data-flight-frame={view.frame?.toFixed(4)} style={{ visibility: view.visible ? 'visible' : 'hidden', opacity: view.opacity ?? 1, clipPath: `inset(${Math.max(0, view.top)}px 0 ${Math.max(0, view.bottom)}px)` }}><SceneBoundary><Canvas frameloop="demand" dpr={[1, 1.5]} camera={{ position: [0, 1.8, 14], fov: 45, near: 0.1, far: 150 }} gl={{ alpha: true, antialias: true, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.1 }} fallback={<div className="flight-fallback"><Plane size={80} strokeWidth={0.75} /><span>3D requires WebGL</span></div>}>
+  return <div ref={containerRef} id="aircraft-canvas" aria-hidden="true" data-flight-chapter="intro" data-flight-progress="0.000" data-flight-frame="0.3000" style={{ visibility: 'visible', opacity: 1, clipPath: 'inset(0px 0 0px)' }}><SceneBoundary><Canvas frameloop="demand" resize={CANVAS_RESIZE} dpr={CANVAS_DPR} camera={CANVAS_CAMERA} gl={CANVAS_GL} fallback={<div className="flight-fallback"><Plane size={80} strokeWidth={0.75} /><span>3D requires WebGL</span></div>}>
     <ambientLight intensity={1.5} color="#ffffff" /><directionalLight position={[8, 12, 10]} intensity={3.5} color="#ffffff" /><directionalLight position={[-6, 6, 4]} intensity={2} color="#ffffff" /><directionalLight position={[0, -6, 2]} intensity={0.75} color="#ffffff" />
-    <FlightWorld journey={journey} revision={view} />
+    <FlightWorld journey={journey} />
   </Canvas></SceneBoundary></div>;
 }

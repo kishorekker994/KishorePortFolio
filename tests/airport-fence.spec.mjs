@@ -88,7 +88,7 @@ for (const width of [390, 1440]) {
     await page.screenshot({ path: testInfo.outputPath('opening-fence.png') });
     await expect.poll(async () => (await fenceSnapshot(page)).opacity, { intervals: [80, 120], timeout: 10000 }).toBe(0.08);
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await expect.poll(async () => (await fenceSnapshot(page)).opacity).toBe(0.65);
+    await expect.poll(async () => (await fenceSnapshot(page)).opacity, { intervals: [80, 120], timeout: 10000 }).toBe(1);
     for (const chapter of ['climb', 'landing', 'arrival']) {
       await page.locator(`#${chapter}`).evaluate(element => element.scrollIntoView({ behavior: 'instant', block: 'start' }));
       await expect(page.locator('#aircraft-canvas')).toHaveAttribute('data-flight-chapter', chapter);
@@ -97,7 +97,7 @@ for (const width of [390, 1440]) {
       expect(scene.treeEdge).toBeGreaterThan(scene.fenceDepth);
       expect(scene.cityEdge).toBeLessThan(scene.fenceDepth);
       expect(scene.roadOffset).toBe(0);
-      expect(scene.opacity).toBe(0.65);
+      expect([0.08, 1]).toContain(scene.opacity);
       await page.screenshot({ path: testInfo.outputPath(`${chapter}-fence.png`) });
     }
     await page.locator('#inmotion').evaluate(element => element.scrollIntoView({ behavior: 'instant', block: 'start' }));

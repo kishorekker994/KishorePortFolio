@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { BoxGeometry, CanvasTexture, Color, ConeGeometry, CylinderGeometry, Group, InstancedMesh, Matrix4, MeshStandardMaterial, SRGBColorSpace } from 'three';
+import { BoxGeometry, CanvasTexture, Color, ConeGeometry, CylinderGeometry, Group, InstancedMesh, Matrix4, MeshStandardMaterial, SRGBColorSpace, Vector3 } from 'three';
 import PropTypes from 'prop-types';
 import { sampleFlight } from './flightStory';
 import { CITY_SETBACK, cityBuildings, cityRoads, cityAvenues, cityVehicles, vehiclePose } from './cityLayout';
+
+const WHEEL_SCALE = new Vector3(0.085, 0.04, 0.085);
 
 export default function Cityscape({ journey }) {
   const city = useRef(null);
@@ -18,10 +20,13 @@ export default function Cityscape({ journey }) {
     const roof = new ConeGeometry(1, 1, 4);
     const wheel = new CylinderGeometry(1, 1, 1, 10);
     const matte = new MeshStandardMaterial({ roughness: 0.85 });
+    const sidewalkMat = new MeshStandardMaterial({ roughness: 0.85, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+    const roadMat = new MeshStandardMaterial({ roughness: 0.85, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    const markingMat = new MeshStandardMaterial({ roughness: 0.85, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
     const glass = new MeshStandardMaterial({ color: '#72949e', roughness: 0.2, metalness: 0.4 });
     const batches = new Map();
     const textures = [];
-    const materials = [matte, glass];
+    const materials = [matte, sidewalkMat, roadMat, markingMat, glass];
     const add = (name, geometry, material, position, scale, color = '#ffffff', rotation = 0) => {
       if (!batches.has(name)) batches.set(name, { geometry, material, instances: [] });
       batches.get(name).instances.push({ position, scale, color, rotation });
@@ -106,19 +111,19 @@ export default function Cityscape({ journey }) {
       }
     }
     for (const road of cityRoads) {
-      add('city-sidewalks', box, matte, [0, 0.025, road], [158, 0.05, 2.5], '#b7bcaf');
-      add('city-roads', box, matte, [0, 0.055, road], [158, 0.025, 1.8], '#586263');
+      add('city-sidewalks', box, sidewalkMat, [0, 0.025, road], [158, 0.05, 2.5], '#b7bcaf');
+      add('city-roads', box, roadMat, [0, 0.055, road], [158, 0.025, 1.8], '#586263');
       for (let horizontal = -76; horizontal <= 76; horizontal += 2) {
         if (cityAvenues.some(avenue => Math.abs(horizontal - avenue) < 1.3)) continue;
-        add('city-lane-markings', box, matte, [horizontal, 0.072, road], [0.8, 0.005, 0.035], '#e2ddc5');
+        add('city-lane-markings', box, markingMat, [horizontal, 0.072, road], [0.8, 0.005, 0.035], '#e2ddc5');
       }
     }
     for (const avenue of cityAvenues) {
-      add('city-sidewalks', box, matte, [avenue, 0.026, -36], [2.5, 0.05, 80], '#b7bcaf');
-      add('city-roads', box, matte, [avenue, 0.057, -36], [1.8, 0.025, 80], '#586263');
+      add('city-sidewalks', box, sidewalkMat, [avenue, 0.026, -36], [2.5, 0.05, 80], '#b7bcaf');
+      add('city-roads', box, roadMat, [avenue, 0.057, -36], [1.8, 0.025, 80], '#586263');
       for (const road of cityRoads) {
         for (let stripe = 0; stripe < 5; stripe++) {
-          for (const side of [-1, 1]) add('city-crosswalks', box, matte, [avenue + side * 1.3, 0.074, road - 0.6 + stripe * 0.3], [0.55, 0.005, 0.13], '#e4e4d5');
+          for (const side of [-1, 1]) add('city-crosswalks', box, markingMat, [avenue + side * 1.3, 0.074, road - 0.6 + stripe * 0.3], [0.55, 0.005, 0.13], '#e4e4d5');
         }
       }
     }
@@ -148,8 +153,22 @@ export default function Cityscape({ journey }) {
     cabins.name = 'city-vehicle-windows';
     wheels.name = 'city-vehicle-wheels';
     for (const mesh of [bodies, cabins, wheels]) mesh.frustumCulled = false;
-    cityVehicles.forEach((vehicle, index) => bodies.setColorAt(index, color.set(vehicle.color)));
+    cityVehicles.forEach((vehicle, index) => {
+      bodies.setColorAt(index, color.set(vehicle.color));
+      const position = vehiclePose(vehicle, 0);
+      const length = { car: 0.6, van: 0.8, bus: 1.25, truck: 1 }[vehicle.kind];
+      const height = vehicle.kind === 'car' ? 0.15 : 0.26;
+      matrix.makeScale(length, height, 0.3).setPosition(position.x, 0.16 + height / 2, position.z);
+      bodies.setMatrixAt(index, matrix);
+      matrix.makeScale(length * 0.64, height * 0.7, 0.26).setPosition(position.x - vehicle.direction * length * 0.06, 0.16 + height * 1.3, position.z);
+      cabins.setMatrixAt(index, matrix);
+      for (let axle = 0; axle < 4; axle++) {
+        matrix.makeRotationX(Math.PI / 2).scale(WHEEL_SCALE).setPosition(position.x + (axle < 2 ? -1 : 1) * length * 0.3, 0.16, position.z + (axle % 2 ? -1 : 1) * 0.16);
+        wheels.setMatrixAt(index * 4 + axle, matrix);
+      }
+    });
     bodies.instanceColor.needsUpdate = true;
+    for (const mesh of [bodies, cabins, wheels]) mesh.instanceMatrix.needsUpdate = true;
     fleet.add(bodies, cabins, wheels);
     group.add(fleet);
     group.userData.buildingCount = cityBuildings.length;
@@ -167,12 +186,13 @@ export default function Cityscape({ journey }) {
   useFrame((state, delta) => {
     const pose = sampleFlight(journey.current.progress);
     city.current.visible = journey.current.chapter !== 'inmotion';
-    city.current.position.set(pose.distance - (journey.current.progress >= 5 ? 108 : 0), 0.012, -CITY_SETBACK - pose.lateral);
-    if (!traffic.current) return;
-    if (!journey.current.reduced && city.current.visible) elapsed.current += Math.min(delta, 0.05);
+    city.current.position.set(pose.distance - (journey.current.progress >= 4.5 ? 108 : 0), 0.012, -CITY_SETBACK - pose.lateral);
+    if (!traffic.current || !city.current.visible || !journey.current.visible) return;
+    elapsed.current += Math.min(delta, 0.05);
     const { bodies, cabins, wheels, matrix } = traffic.current;
     cityVehicles.forEach((vehicle, index) => {
-      const position = vehiclePose(vehicle, journey.current.reduced ? 0 : elapsed.current);
+      if (!vehicle.speed) return;
+      const position = vehiclePose(vehicle, elapsed.current);
       const length = { car: 0.6, van: 0.8, bus: 1.25, truck: 1 }[vehicle.kind];
       const height = vehicle.kind === 'car' ? 0.15 : 0.26;
       matrix.makeScale(length, height, 0.3).setPosition(position.x, 0.16 + height / 2, position.z);
@@ -180,7 +200,7 @@ export default function Cityscape({ journey }) {
       matrix.makeScale(length * 0.64, height * 0.7, 0.26).setPosition(position.x - vehicle.direction * length * 0.06, 0.16 + height * 1.3, position.z);
       cabins.setMatrixAt(index, matrix);
       for (let axle = 0; axle < 4; axle++) {
-        matrix.makeRotationX(Math.PI / 2).scale({ x: 0.085, y: 0.04, z: 0.085 }).setPosition(position.x + (axle < 2 ? -1 : 1) * length * 0.3, 0.16, position.z + (axle % 2 ? -1 : 1) * 0.16);
+        matrix.makeRotationX(Math.PI / 2).scale(WHEEL_SCALE).setPosition(position.x + (axle < 2 ? -1 : 1) * length * 0.3, 0.16, position.z + (axle % 2 ? -1 : 1) * 0.16);
         wheels.setMatrixAt(index * 4 + axle, matrix);
       }
     });

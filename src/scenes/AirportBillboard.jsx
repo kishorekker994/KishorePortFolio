@@ -78,7 +78,7 @@ export default function AirportBillboard({ journey }) {
     {[-1, 1].map(side => <mesh key={side} position={[side * 0.3, 0.62, -0.3]} rotation={[0, 0, side * -0.7]}><boxGeometry args={[0.12, 0.6, 0.16]} /><meshStandardMaterial color="#788a8e" metalness={0.75} roughness={0.4} /></mesh>)}
     <group ref={panel} name="billboard-panel">
     <mesh position={[0, printCenter, 0]}><boxGeometry args={[printWidth + 0.12, printHeight + 0.12, 0.16]} /><meshStandardMaterial color="#667b83" metalness={0.65} roughness={0.5} /></mesh>
-    <mesh name="billboard-print" position={[0, printCenter, 0.085]}><planeGeometry args={[printWidth, printHeight]} /><meshStandardMaterial key={print?.uuid ?? 'loading'} map={print} color="#333333" emissive="#ffffff" emissiveMap={print} emissiveIntensity={0.85} roughness={1} metalness={0} toneMapped={false} /></mesh>
+    <mesh name="billboard-print" position={[0, printCenter, 0.085]}><planeGeometry args={[printWidth, printHeight]} /><meshStandardMaterial key={print?.uuid ?? 'loading'} map={print} color={print ? '#333333' : '#f7f8f2'} emissive={print ? '#ffffff' : '#000000'} emissiveMap={print} emissiveIntensity={0.85} roughness={1} metalness={0} toneMapped={false} /></mesh>
     {[-1, 1].map(side => <group key={side}>
       <mesh position={[side * (printWidth / 2 + 0.05), printCenter, 0.11]}><boxGeometry args={[0.06, printHeight + 0.16, 0.14]} /><meshStandardMaterial color="#a4b0ad" metalness={0.8} roughness={0.3} /></mesh>
       <mesh position={[0, printCenter + side * (printHeight / 2 + 0.05), 0.11]}><boxGeometry args={[printWidth + 0.16, 0.06, 0.14]} /><meshStandardMaterial color="#a4b0ad" metalness={0.8} roughness={0.3} /></mesh>

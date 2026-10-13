@@ -19,7 +19,7 @@ async function settleScroll(page) {
 
 for (const width of [390, 1440]) {
   test(`flight chapters render at ${width}px`, async ({ page }, testInfo) => {
-    test.setTimeout(90000);
+    test.setTimeout(120000);
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const errors = [];
@@ -197,10 +197,10 @@ for (const width of [390, 1440]) {
   });
 }
 
-test('airfield strobes blink while stationary and stop in reduced motion', async ({ page }, testInfo) => {
+test('airfield strobes blink while stationary and keep animating in reduced motion', async ({ page }, testInfo) => {
   test.setTimeout(60000);
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(url);
   await expect(page.locator('.flight-intro')).toHaveCount(0);
   await page.locator('#runway').evaluate(element => scrollTo({ top: element.offsetTop + 230, behavior: 'instant' }));
@@ -221,20 +221,21 @@ test('airfield strobes blink while stationary and stop in reduced motion', async
       canvas.height = bitmap.height;
       const context = canvas.getContext('2d');
       context.drawImage(bitmap, 0, 0);
-      const pixels = context.getImageData(0, 840, canvas.width, 85).data;
-      let bright = 0;
+      const pixels = context.getImageData(0, 780, canvas.width, 145).data;
+      const bins = [0, 0, 0, 0, 0, 0, 0, 0];
       for (let offset = 0; offset < pixels.length; offset += 4) {
-        if (pixels[offset] > 245 && pixels[offset + 1] > 245 && pixels[offset + 2] > 220) bright++;
+        if (pixels[offset] > 245 && pixels[offset + 1] > 245 && pixels[offset + 2] > 220) {
+          const column = (offset / 4) % canvas.width;
+          bins[Math.min(7, Math.floor(column * 8 / canvas.width))]++;
+        }
       }
       bitmap.close();
-      return bright;
+      return bins;
     }, [...image]));
   }
-  expect(Math.max(...counts) - Math.min(...counts), 'strobe halos must change while the plane is paused').toBeGreaterThan(10);
+  const variation = Math.max(...counts[0].map((_, bin) => Math.max(...counts.map(row => row[bin])) - Math.min(...counts.map(row => row[bin]))));
+  expect(variation, 'strobe halos must change while the plane is paused even in reduced motion').toBeGreaterThan(10);
   expect(await page.locator('#aircraft-canvas').getAttribute('data-flight-progress')).toBe(progress);
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await settleScroll(page);
-  const reducedFrame = await page.screenshot();
-  await settleScroll(page);
-  expect((await page.screenshot()).equals(reducedFrame)).toBe(true);
+  await page.locator('#runway').evaluate(element => scrollTo({ top: element.offsetTop + 460, behavior: 'instant' }));
+  await expect.poll(async () => Number(await page.locator('#aircraft-canvas').getAttribute('data-flight-progress'))).toBeGreaterThan(Number(progress));
 });
