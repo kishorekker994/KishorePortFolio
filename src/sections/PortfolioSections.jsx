@@ -65,8 +65,8 @@ export function Intro() {
   return <section id="intro" tabIndex={-1} className="flight-hero" data-flight-from="0" data-flight-to="1">
     <div className="hero-grid" aria-hidden="true" /><div className="hero-horizon" aria-hidden="true" />
     <div className="folio-container hero-content"><div className="hero-overline"><span className="status-dot" /> TECHNICAL LEAD & JAVA BACKEND ENGINEER</div>
-      <div className="hero-copy" data-depth="55"><h1>Kishore<br /><span>Kumar<span className="hero-period">.</span></span></h1><p>Engineering the systems<br />that move the world.</p><div className="hero-actions"><a className="round-link" href="#traveltech"><span><ArrowDown size={21} /></span>Explore my work</a><a className="text-link" href="#experience">11+ years of engineering <ArrowUpRight size={15} /></a></div></div>
-      <div className="aircraft-caption"><span className="crosshair" aria-hidden="true" /><span>BOEING 787 / DREAMLINER<small>GLOBAL TRAVEL. CONNECTED SYSTEMS.</small></span></div>
+      <div className="hero-copy" data-depth="55"><h1>Kishore <br /><span>Kumar<span className="hero-period">.</span></span></h1><p>Engineering the systems <br />that move the world.</p><div className="hero-actions"><a className="round-link" href="#traveltech"><span><ArrowDown size={21} /></span>Explore my work</a><a className="text-link" href="#experience">11+ years of engineering <ArrowUpRight size={15} /></a></div></div>
+      <div className="aircraft-caption"><span className="crosshair" aria-hidden="true" /><span>FLIGHT KK2015 / MAA → WORLD<small>GLOBAL TRAVEL. CONNECTED SYSTEMS.</small></span></div>
       <div className="hero-bottom"><div><span className="folio-eyebrow">CURRENTLY</span><strong>Technical Lead at TCS</strong><span>Travelport platform services</span></div><div className="hero-bottom-coordinate"><MapPin size={15} /><span>Chennai, India<br /><small>13.08 N / 80.27 E</small></span></div><a href="#experience" className="hero-scroll" aria-label="Continue to experience"><span>01 / 15</span><ArrowDown size={18} /></a></div>
     </div>
   </section>;

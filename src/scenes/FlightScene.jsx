@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { AdditiveBlending, Box3, Color, Group, MathUtils, Matrix4, Mesh, MeshBasicMaterial, SphereGeometry, Sprite, SpriteMaterial, Vector3, ACESFilmicToneMapping } from 'three';
 import { Plane } from 'lucide-react';
 import { advanceFlight, flightFraming, sampleFlight, storyProgress } from './flightStory';
-import { AirportEnvironment, AirportTerminal, Cloudscape, Passenger, TaxiwayPavement } from './AirportEnvironment';
+import { AirportEnvironment, AirportTerminal, Cloudscape, Passenger, TaxiwayPavement, TransitClouds } from './AirportEnvironment';
 import { rigLandingGear } from './aircraftParts';
 import useLightTexture from './useLightTexture';
 import Cityscape from './Cityscape';
@@ -212,6 +212,50 @@ const CANVAS_DPR = [1, 1.5];
 const CANVAS_CAMERA = { position: [0, 1.8, 14], fov: 45, near: 1, far: 150 };
 const CANVAS_GL = { alpha: true, antialias: true, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.1 };
 const CANVAS_RESIZE = { scroll: false };
+const CAMERA_RADIUS = Math.hypot(1.8, 14);
+const CAMERA_ELEVATION = Math.atan2(1.8, 14);
+const GROUND_DROP = 3;
+// Matches the page's --folio-mist so distant ground dissolves into the background.
+const FOG = ['#efebf8', 34, 105];
+const DAYLIGHT = new Color('#ffffff');
+const GOLDEN_SUN = new Color('#ffcf9e');
+const GOLDEN_SKY = new Color('#ffeee2');
+const SHADE = new Color('#c9bdff');
+
+const SHADOW_FRAGMENT = `
+  varying vec2 shadowUv;
+  uniform float strength;
+  float blob(vec2 p, vec2 radius) { return 1.0 - smoothstep(0.55, 1.0, length(p / radius)); }
+  void main() {
+    vec2 p = shadowUv - 0.5;
+    float fuselage = blob(p, vec2(0.46, 0.05));
+    float wings = blob(vec2(p.x - abs(p.y) * 0.42 - 0.01, p.y), vec2(0.075, 0.45));
+    float tail = blob(vec2(p.x - abs(p.y) * 0.5 - 0.4, p.y), vec2(0.04, 0.15));
+    float ambient = 1.0 - smoothstep(0.0, 0.5, length(p * vec2(1.0, 1.6)));
+    float shade = max(max(fuselage, wings), tail) * 0.75 + ambient * 0.3;
+    gl_FragColor = vec4(0.07, 0.05, 0.1, min(shade, 1.0) * strength);
+  }`;
+
+function SceneLighting({ journey }) {
+  const ambient = useRef(null);
+  const key = useRef(null);
+  const fill = useRef(null);
+  useFrame(() => {
+    const { sun } = sampleFlight(journey.current.progress);
+    key.current.color.copy(DAYLIGHT).lerp(GOLDEN_SUN, sun);
+    key.current.intensity = 3.5 - sun * 0.25;
+    fill.current.color.copy(DAYLIGHT).lerp(SHADE, sun);
+    ambient.current.color.copy(DAYLIGHT).lerp(GOLDEN_SKY, sun);
+  });
+  return <>
+    <ambientLight ref={ambient} intensity={1.5} color="#ffffff" />
+    <directionalLight ref={key} name="sun-key-light" position={[8, 12, 10]} intensity={3.5} color="#ffffff" />
+    <directionalLight ref={fill} position={[-6, 6, 4]} intensity={2} color="#ffffff" />
+    <directionalLight position={[0, -6, 2]} intensity={0.75} color="#ffffff" />
+  </>;
+}
+
+SceneLighting.propTypes = { journey: PropTypes.shape({ current: PropTypes.object }).isRequired };
 
 function FlightWorld({ journey }) {
   const world = useRef(null);
@@ -223,6 +267,7 @@ function FlightWorld({ journey }) {
   const arrivalConnector = useRef(null);
   const apron = useRef(null);
   const clouds = useRef(null);
+  const transitClouds = useRef(null);
   const terminal = useRef(null);
   const bridge = useRef(null);
   const passengers = useRef(null);
@@ -232,7 +277,7 @@ function FlightWorld({ journey }) {
     const currentJourney = journey.current;
     currentJourney.invalidate = invalidate;
     const banner = scene.getObjectByName('grass-photo-billboard');
-    const groups = [runway.current, taxiConnector.current, arrivalConnector.current, apron.current, terminal.current].filter(Boolean);
+    const groups = [runway.current, taxiConnector.current, arrivalConnector.current, apron.current, terminal.current, transitClouds.current].filter(Boolean);
     const states = groups.map(group => group.visible);
     groups.forEach(group => { group.visible = true; });
     if (banner) {
@@ -278,11 +323,14 @@ function FlightWorld({ journey }) {
     journey.current.distance = pose.distance;
     const intro = chapter === 'intro';
     const mobile = size.width <= 700;
+    const elevation = CAMERA_ELEVATION + pose.lift;
+    camera.position.set(Math.sin(pose.orbit) * Math.cos(elevation), Math.sin(elevation), Math.cos(pose.orbit) * Math.cos(elevation)).multiplyScalar(CAMERA_RADIUS);
+    camera.lookAt(0, 0, 0);
     const horizontalSpan = mobile ? chapter === 'arrival' ? 18 : intro ? 11 : 10 : 11;
     const viewportHeight = 2 * Math.tan(MathUtils.degToRad(camera.fov / 2)) * camera.position.length();
     const scale = Math.min(viewportHeight * size.width / size.height / horizontalSpan, viewportHeight * journey.current.available / (intro ? 5.5 : 4.5));
     const worldScale = 0.7;
-    const zoom = Math.max(0.001, scale / worldScale);
+    const zoom = Math.max(0.001, scale / worldScale) * pose.zoom;
     const targetOffsetX = mobile ? size.width * (chapter === 'arrival' ? 0.1 : intro ? -0.04 : 0) : 0;
     const targetOffsetY = (0.5 - journey.current.center) * size.height;
     const sizeChanged = cameraState.current.width !== size.width || cameraState.current.height !== size.height;
@@ -301,21 +349,26 @@ function FlightWorld({ journey }) {
     world.current.scale.setScalar(worldScale);
     camera.setViewOffset(size.width, size.height, cameraState.current.offsetX, cameraState.current.offsetY, size.width, size.height);
     world.current.position.y = -worldScale * (intro ? 0.7 : 0.4);
+    scene.fog.near = Math.max(17, FOG[1] - pose.height * 10);
+    scene.fog.far = Math.max(38, FOG[2] - pose.height * 36);
     runway.current.visible = chapter !== 'inmotion';
-    runway.current.position.y = -0.85 - pose.height * 1.6;
+    runway.current.position.y = -0.85 - pose.height * GROUND_DROP;
     runwayStrip.current.position.set(pose.distance % 12, 0, -pose.lateral);
     taxiConnector.current.position.x = pose.distance - pose.distance % 12;
     taxiConnector.current.visible = progress < 4;
     arrivalConnector.current.position.x = pose.distance - pose.distance % 12 - 128;
     arrivalConnector.current.visible = progress > 5.65;
-    shadow.current.material.uniforms.strength.value = 0.2 * (1 - MathUtils.smoothstep(pose.height, 0, 1.5));
+    shadow.current.material.uniforms.strength.value = 0.4 * (1 - MathUtils.smoothstep(pose.height, 0, 1.2));
+    shadow.current.rotation.z = pose.yaw + Math.PI / 2;
     markings.current.position.x = 0;
     clouds.current.visible = chapter === 'inmotion';
-    clouds.current.position.set((pose.distance - 68) * 0.12, pose.cloudHeight, -3);
+    clouds.current.position.set((pose.distance - 68) * 0.25, pose.cloudHeight, -3);
+    transitClouds.current.visible = (chapter === 'climb' || chapter === 'descent') && Math.abs(pose.deck) < 3.2;
+    transitClouds.current.position.set((pose.distance - (progress < 4.5 ? 58 : 98)) * 0.45, pose.deck, 0);
     terminal.current.visible = progress > 5;
     apron.current.visible = progress > 5.65;
     apron.current.position.set(pose.distance - 140, 0, -7 - pose.lateral);
-    terminal.current.position.set(pose.distance - 140, -0.85 - pose.height * 1.6, -11 - pose.lateral);
+    terminal.current.position.set(pose.distance - 140, -0.85 - pose.height * GROUND_DROP, -11 - pose.lateral);
     bridge.current.scale.z = MathUtils.lerp(0.1, 1, pose.bridge);
     passengers.current.visible = pose.disembark > 0;
     passengers.current.children.forEach((passenger, index) => {
@@ -352,10 +405,13 @@ function FlightWorld({ journey }) {
         {Array.from({ length: 15 }, (_, index) => <mesh key={index} position={[(index - 7) * 3, 0.024, -2]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.012, 14]} /><meshBasicMaterial color="#737a79" polygonOffset polygonOffsetFactor={-4} polygonOffsetUnits={-4} /></mesh>)}
         <mesh position={[0, 0.026, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[16, 0.04]} /><meshBasicMaterial color="#e1bd4f" polygonOffset polygonOffsetFactor={-5} polygonOffsetUnits={-5} /></mesh>
       </group>
-      <mesh ref={shadow} position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[3.8, 0.9, 1]}><planeGeometry args={[2, 2]} /><shaderMaterial transparent depthWrite={false} uniforms={{ strength: { value: 0.2 } }} vertexShader="varying vec2 shadowUv; void main() { shadowUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }" fragmentShader="varying vec2 shadowUv; uniform float strength; void main() { float falloff = 1.0 - smoothstep(0.05, 0.5, length(shadowUv - 0.5)); gl_FragColor = vec4(0.08, 0.06, 0.1, falloff * strength); }" /></mesh>
+      <mesh ref={shadow} name="aircraft-contact-shadow" position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[4.2, 4.2, 1]}><planeGeometry args={[2, 2]} /><shaderMaterial transparent depthWrite={false} uniforms={{ strength: { value: 0.5 } }} vertexShader="varying vec2 shadowUv; void main() { shadowUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }" fragmentShader={SHADOW_FRAGMENT} /></mesh>
     </group>
     <group ref={clouds} name="altitude-clouds">
       <Cloudscape />
+    </group>
+    <group ref={transitClouds} name="transit-cloud-deck" visible={false}>
+      <TransitClouds />
     </group>
     <group ref={terminal} name="arrival-terminal">
       <AirportTerminal journey={journey} />
@@ -481,7 +537,8 @@ export default function FlightScene() {
   }, []);
 
   return <div ref={containerRef} id="aircraft-canvas" aria-hidden="true" data-flight-chapter="intro" data-flight-progress="0.000" data-flight-frame="0.3000" style={{ visibility: 'visible', opacity: 1, clipPath: 'inset(0px 0 0px)' }}><SceneBoundary><Canvas frameloop="demand" resize={CANVAS_RESIZE} dpr={CANVAS_DPR} camera={CANVAS_CAMERA} gl={CANVAS_GL} fallback={<div className="flight-fallback"><Plane size={80} strokeWidth={0.75} /><span>3D requires WebGL</span></div>}>
-    <ambientLight intensity={1.5} color="#ffffff" /><directionalLight position={[8, 12, 10]} intensity={3.5} color="#ffffff" /><directionalLight position={[-6, 6, 4]} intensity={2} color="#ffffff" /><directionalLight position={[0, -6, 2]} intensity={0.75} color="#ffffff" />
+    <fog attach="fog" args={FOG} />
+    <SceneLighting journey={journey} />
     <FlightWorld journey={journey} />
   </Canvas></SceneBoundary></div>;
 }

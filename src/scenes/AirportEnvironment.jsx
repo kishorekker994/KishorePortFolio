@@ -139,11 +139,21 @@ export function AirportEnvironment({ journey }) {
 AirportEnvironment.propTypes = { journey: PropTypes.shape({ current: PropTypes.object }).isRequired };
 
 export function Cloudscape() {
-  return <Suspense fallback={null}><Clouds texture="/models/cloud.png" material={MeshBasicMaterial} limit={100} frustumCulled={false}>
+  return <Suspense fallback={null}><Clouds texture="/models/cloud.png" material={MeshBasicMaterial} limit={140} frustumCulled={false}>
     {[0, 1, 2, 3, 4].map(index => <group key={index} position={[(index - 2) * 7, -0.4 - index % 2, -5 - index % 3 * 3]}>
       <Cloud seed={index + 10} segments={10} bounds={[4, 0.45, 1.5]} volume={5} growth={0} speed={0} color="#c8d8e9" opacity={0.65} fade={1} />
       <Cloud seed={index + 30} position={[0, 0.65, 0.2]} segments={10} bounds={[3.5, 0.65, 1.2]} volume={4.5} growth={0} speed={0} color={index % 2 ? '#fff5e9' : '#f8fcff'} opacity={0.9} fade={1} />
     </group>)}
+    {[0, 1, 2, 3, 4].map(index => <Cloud key={`sea-${index}`} seed={index + 70} position={[(index - 2) * 11, -1.9 - index % 2 * 0.3, -18 - index % 3 * 3]} segments={8} bounds={[7, 0.5, 2]} volume={8} growth={0} speed={0} color={index % 2 ? '#f4f1fb' : '#fff8f0'} opacity={0.85} fade={1} />)}
+  </Clouds></Suspense>;
+}
+
+// [x, y, z, width] puffs; positive z passes between the camera and the aircraft.
+const TRANSIT_CLOUDS = [[-15, 0.2, -7, 4.5], [-7, -0.3, -9, 5], [1, 0.25, -6, 4], [9, -0.2, -8, 5], [17, 0.3, -7, 4.5], [-11, 0, 3.5, 3.2], [3, -0.15, 4.5, 3], [14, 0.1, 3, 3.4], [-4, 0.5, -1.5, 2.8], [7, -0.45, 1, 2.6]];
+
+export function TransitClouds() {
+  return <Suspense fallback={null}><Clouds texture="/models/cloud.png" material={MeshBasicMaterial} limit={90} frustumCulled={false}>
+    {TRANSIT_CLOUDS.map(([x, y, z, width], index) => <Cloud key={index} seed={index + 50} position={[x, y, z]} segments={9} bounds={[width, 0.5, 1.4]} volume={width * 1.2} growth={0} speed={0} color={index % 3 ? '#f7f9ff' : '#fff3e6'} opacity={z > 0 ? 0.55 : 0.85} fade={1} />)}
   </Clouds></Suspense>;
 }
 

@@ -78,4 +78,10 @@
   .motion-section .chapter-label { display: none; }
   #main-content .motion-type h2 { font-size: 2rem; }
   .motion-footer { font-size: 0.5rem; line-height: 1.5; }
+  .flight-chapter-content { padding-block: 1rem; }
+  .flight-chapter-heading .folio-eyebrow { margin-bottom: 0.5rem; }
+  #main-content .flight-chapter-heading h2 { font-size: 1.75rem; max-width: none; }
+  .hero-overline, #main-content .hero-bottom > *, .aircraft-caption { display: none; }
+  .hero-copy h1 br, .hero-copy p br { display: none; }
+  .hero-bottom { padding-block: 0; }
 }
